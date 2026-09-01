@@ -7,7 +7,13 @@
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="Webflow" name="generator" />
   <link href="css/portfolio-cz.webflow.shared.614758680.css" rel="stylesheet" type="text/css" />
-  <script type="text/javascript">
+  <style>
+    .loading-marquee-row {
+      width: 100vw !important;
+      min-width: 100vw !important;
+    }
+
+  </style>
     ! function(o, c) {
       var n = c.documentElement,
         t = " w-mod-";
@@ -20,45 +26,59 @@
 </head>
 
 <body class="body">
+
+  <!-- ==========================================================================
+       Úvodní ("intro") video, které Webflow interakce (data-w-id) při načtení
+       stránky posouvá/odkrývá. Sedí mimo .na-tac-obrazovka záměrně kvůli IX2
+       animaci definované v js/webflow.schunk...js.
+       ========================================================================== -->
   <div
     data-poster-url="images/FullHDr15Compressed-poster-00001.jpg"
     data-video-urls="images/FullHDr15Compressed-transcode.mp4"
     data-autoplay="true" data-loop="true" data-wf-ignore="true" data-w-id="ddc8c702-f95e-bce7-1b80-5954a9ae3071"
     style="-webkit-transform:translate3d(null, 100%, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-moz-transform:translate3d(null, 100%, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-ms-transform:translate3d(null, 100%, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);transform:translate3d(null, 100%, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0)"
-    class="the-background-video-l-va w-background-video w-background-video-atom"><video
+    class="the-background-video-l-va w-background-video w-background-video-atom">
+    <video
       id="ddc8c702-f95e-bce7-1b80-5954a9ae3071-video" autoplay="" loop=""
       style="background-image:url(&quot;images/FullHDr15Compressed-poster-00001.jpg&quot;)"
       muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover">
-      <source
-        src="images/FullHDr15Compressed-transcode.mp4"
-        data-wf-ignore="true" />    </video></div>
+      <source src="images/FullHDr15Compressed-transcode.mp4" data-wf-ignore="true" />
+    </video>
+  </div>
+
+  <!-- ==========================================================================
+       LOADING OBRAZOVKA
+       ========================================================================== -->
   <div data-w-id="a29d7fb5-c890-8e22-d656-0e56e2935ff7" style="display:block;opacity:1" class="na-tac-obrazovka">
+
     <div
       data-poster-url="images/FullHDr15Compressed-poster-00001.jpg"
       data-video-urls="images/FullHDr15Compressed-transcode.mp4"
       data-autoplay="true" data-loop="true" data-wf-ignore="true"
-      class="the-background-video-l-va w-background-video w-background-video-atom"><video
+      class="the-background-video-l-va w-background-video w-background-video-atom">
+      <video
         id="bb9feef5-fd67-ec47-5ec6-5d0fb92f9311-video" autoplay="" loop=""
         style="background-image:url(&quot;images/FullHDr15Compressed-poster-00001.jpg&quot;)"
         muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover">
-        <source
-          src="images/FullHDr15Compressed-transcode.mp4"
-          data-wf-ignore="true" />      </video></div>
-    <div class="temporalily-disable">
-      <div class="strip-carouselu">
-        <div class="dynamic-container">
-          <div class="dynamic-text">  •  SPOUŠTÍ SE JAVASCRIPT  •  UŽ TO SKORO BUDE  •  STAHUJÍ SE ASSETY  •  STRÁNKA SE
-            NAČÍTÁ  •  PŘIPRAVUJE SE</div>
-        </div>
-      </div>
-      <div class="strip-carouselu"><img src="images/mini_planyrka.webp" loading="lazy" alt="" class="teaser" /><img
-          src="images/mini_kulturni_dum_chudiny_olomouc.webp" loading="lazy" sizes="(max-width: 540px) 100vw, 540px"
-          alt="" class="teaser-copy-1-copy-copy" /><img src="images/mini_dum_a_sklenik_prostredni_becva.webp"
-          loading="lazy" sizes="(max-width: 520px) 100vw, 520px"
-          alt="" class="teaser" /><img src="images/mini_jidelni_zidle_masle.webp" loading="lazy"
-          sizes="(max-width: 540px) 100vw, 540px" alt=""
-          class="teaser-copy-1-copy-copy-copy" /></div>
+        <source src="images/FullHDr15Compressed-transcode.mp4" data-wf-ignore="true" />
+      </video>
     </div>
+
+    <div class="loading-stats" aria-live="polite">
+      <div class="loading-stats-heading">Loading site</div>
+      <div class="loading-stats-track"><div class="loading-stats-progress"></div></div>
+      <div class="loading-stats-grid">
+        <div><span class="loading-stats-label">Site size</span><strong data-loading-size>calculating</strong></div>
+        <div><span class="loading-stats-label">Download speed</span><strong data-loading-speed>calculating</strong></div>
+        <div><span class="loading-stats-label">Downloaded</span><strong data-loading-downloaded>0 B</strong></div>
+      </div>
+    </div>
+
+    <!-- Vlastní skript pro automatické dopočítání velikosti běžícího textu.
+         Div je schválně skrytý přes CSS, ale skript uvnitř běží pořád a
+         upravuje VŠECHNY .dynamic-text prvky na stránce (i ty viditelné níže). -->
+
+
     <div class="code-embed-wide-text w-embed w-script">
       <style>
         .dynamic-container {
@@ -69,246 +89,423 @@
 
         .dynamic-text {
           font-family: "system-ui", sans-serif;
-          color: #FFFFFF;
+          color: #ac80ad;
           white-space: nowrap;
           font-weight: 200;
           line-height: 1;
         }
       </style>
-
-
       <script>
-        window.addEventListener('DOMContentLoaded', (event) => {
+        window.addEventListener('DOMContentLoaded', () => {
           adjustTextSize();
-
-          window.addEventListener('resize', () => {
-            adjustTextSize();
-          });
+          window.addEventListener('resize', adjustTextSize);
         });
 
         function adjustTextSize() {
-          // Assuming the elements have the class 'dynamic-container' and 'dynamic-text'
           const dynamicContainers = document.querySelectorAll('.dynamic-container');
           const dynamicTexts = document.querySelectorAll('.dynamic-text');
 
           dynamicContainers.forEach((dynamicContainer, index) => {
-            const containerWidth = dynamicContainer.offsetWidth;
-            const dynamicTextWidth = dynamicTexts[index].offsetWidth;
+            const textEl = dynamicTexts[index];
+            if (!dynamicContainer || !textEl) return;
 
+            const containerWidth = dynamicContainer.offsetWidth;
+            const dynamicTextWidth = textEl.offsetWidth || 1;
             const fontSize =
               (containerWidth / dynamicTextWidth) *
-              parseFloat(window.getComputedStyle(dynamicTexts[index]).fontSize);
+              parseFloat(window.getComputedStyle(textEl).fontSize);
 
-            dynamicTexts[index].style.fontSize = fontSize + 'px';
+            textEl.style.fontSize = fontSize + 'px';
           });
         }
       </script>
     </div>
-    <div class="carousel">
-      <div class="strip-carouselu">
-        <div class="dynamic-container">
-          <div class="dynamic-text">            •            STRÁNKA SE NAČÍTÁ            •            KOMPILUJÍ SE
-            VIDEA            •            POČKEJTE PROSÍM           •            NAHRÁVAJÍ SE
-            FOTKY            •            JEŠTĚ CHVÍLI</div>
-        </div>
-      </div>
-      <div class="strip-carouselu">
-        <div class="dynamic-container">
-          <div class="dynamic-text">            •            STAHUJÍ SE VELKÉ
-            ANIMACE            •            PŘEDPOKLÁDANÝ ČAS  STAHOVÁNÍ: 1 MIN 8 S          •            UŽ TO SKORO
-            BUDE            •            POČKEJTE PROSÍM</div>
-        </div>
-      </div>
-      <div class="strip-carouselu">
-        <div class="dynamic-container">
-          <div class="dynamic-text">            •            STRÁNKA SE NAČÍTÁ            •            KOMPILUJÍ SE
-            VIDEA            •            POČKEJTE PROSÍM            •            NAHRÁVAJÍ SE
-            FOTKY            •            JEŠTĚ CHVÍLI</div>
-        </div>
-      </div>
+
+    <!-- Aktivní běžící text při načítání stránky -->
+
+
+    <div class="carousel loading-carousel" aria-label="Loading content marquee">
+      <div id="loading-marquee" class="loading-marquee"></div>
     </div>
+
+    <script>
+      (() => {
+        const images = [
+          { src: 'images/mini_stodola.webp', className: 'ministodola' },
+          { src: 'images/mini_dum_a_sklenik_prostredni_becva.webp', className: 'dumasklenikprostrednibecva' },
+          { src: 'images/mini_jidelni_zidle_masle.webp', className: 'jidelniZidleMasle' },
+          { src: 'images/mini_kulturni_dum_chudiny_olomouc.webp', className: 'kulturniDumChudinyOlomouc' },
+          { src: 'images/mini_planyrka.webp', className: 'planyrka' },
+          { src: 'images/mini_RD_Ponedrazka.webp', className: 'RDPonedrazka' },
+          { src: 'images/mini_Pohrebni_Ustav_Nastavba.webp', className: 'PohrebniUstavNastavba' },
+          { src: 'images/mini_Obnoveni_Kaple_Serak.webp', className: 'ObnoveniKapleSerak' },
+          { src: 'images/mini_RD_Tetcice.webp', className: 'RDTetcice' },
+          { src: 'images/mini_Mendlovo_Namesti.webp', className: 'MendlovoNamesti' },
+          { src: 'images/mini_Chata_Pteni.webp', className: 'ChataPteni' },
+          { src: 'images/mini_zahradni_ucebna.webp', className: 'zahradniucebna' },
+          { src: 'images/mini_Kolonizacni_Parez.webp', className: 'KolonizacniParez' },
+          { src: 'images/mini_RD_Dobrovskeho_48.webp', className: 'RDDobrovskeho48' },
+          { src: 'images/mini_zs_ant_hill.webp', className: 'zsanthill' }
+        ];
+
+        const marquee = document.getElementById('loading-marquee');
+
+        function buildRows() {
+          if (!marquee) return;
+
+          const viewportHeight = window.innerHeight || 900;
+          const targetRows = 6;
+          const forcescaleGap = 0.25;
+          const rowHeight = (1 + forcescaleGap) * viewportHeight / (targetRows);
+          const squareSize = rowHeight; 
+          const itemGap = squareSize * 0.2;
+          const rowGap = rowHeight * (-forcescaleGap + 0.03);
+          const rowDurations = [350, 176, 72, 224, 246, 32];
+          const rowDelays = [0, -83, -29, -147, -261, -116];
+
+          marquee.innerHTML = '';
+
+          for (let i = 0; i < targetRows; i += 1) {
+            const row = document.createElement('div');
+            row.className = 'loading-marquee-row' + (i % 2 === 1 ? ' reverse' : '');
+            row.style.height = `${rowHeight}px`;
+            row.style.marginTop = i === 0 ? '0' : `${rowGap}px`;
+
+            const track = document.createElement('div');
+            track.className = 'loading-marquee-track';
+            track.style.setProperty('--duration', `${rowDurations[i % rowDurations.length]*2}s`);
+            track.style.animationDelay = `${rowDelays[i % rowDelays.length]}s`;
+            track.style.height = '100%';
+
+            const buildTileGroup = () => {
+              const group = document.createElement('div');
+              group.className = 'loading-marquee-track-group';
+
+              [...images, ...images, ...images].forEach(({ src, className }) => {
+                const item = document.createElement('div');
+                item.className = 'loading-marquee-item';
+                item.style.width = `${squareSize}px`;
+                item.style.height = `${squareSize}px`;
+                item.style.marginInline = `${itemGap / 2}px`;
+
+                const frame = document.createElement('div');
+                frame.className = `thumbnail-frame ${className}`;
+
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = '';
+                img.loading = 'lazy';
+                img.style.objectFit = 'contain';
+                img.style.display = 'block';
+                img.style.filter = 'none';
+
+                frame.appendChild(img);
+                item.appendChild(frame);
+                group.appendChild(item);
+              });
+
+              return group;
+            };
+
+            track.appendChild(buildTileGroup());
+            track.appendChild(buildTileGroup());
+            row.appendChild(track);
+            marquee.appendChild(row);
+          }
+        }
+
+        buildRows();
+        window.addEventListener('resize', buildRows);
+      })();
+    </script>
+
+    <script>
+      (() => {
+        const stats = document.querySelector('.loading-stats');
+        if (!stats) return;
+
+        const progress = stats.querySelector('.loading-stats-progress');
+        const size = stats.querySelector('[data-loading-size]');
+        const speed = stats.querySelector('[data-loading-speed]');
+        const downloaded = stats.querySelector('[data-loading-downloaded]');
+        const startedAt = performance.now();
+        const assetUrls = [...new Set([...document.querySelectorAll('.loading-marquee-item img')].map(image => image.src))];
+        let totalBytes = 0;
+        let downloadedBytes = 0;
+        let completedAssets = 0;
+
+        const formatBytes = (bytes) => {
+          if (!bytes) return 'calculating';
+          const units = ['B', 'KB', 'MB', 'GB'];
+          const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+          return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
+        };
+
+        const updateStats = () => {
+          const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
+          const loadedRatio = assetUrls.length ? completedAssets / assetUrls.length : 0;
+
+          progress.style.width = `${Math.round(loadedRatio * 100)}%`;
+          downloaded.textContent = formatBytes(downloadedBytes);
+          size.textContent = formatBytes(totalBytes);
+          speed.textContent = downloadedBytes ? `${formatBytes(downloadedBytes / elapsedSeconds)}/s` : 'calculating';
+        };
+
+        updateStats();
+        window.setInterval(updateStats, 250);
+
+        assetUrls.forEach(url => {
+          fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+              totalBytes += blob.size;
+              downloadedBytes += blob.size;
+              completedAssets += 1;
+              updateStats();
+            })
+            .catch(() => {
+              completedAssets += 1;
+              updateStats();
+            });
+        });
+      })();
+    </script>
+
+    <!-- ------------------
+    Carousel je tady
+    ----------------------- -->
+    <!--
     <div data-w-id="4de8fa44-7862-4419-6aac-b71bc6f7e20c" style="opacity:0;display:none"
-      class="carousel temporarily-disable">
-      <div class="strip-carouselu"><img src="images/mini_stodola.webp" loading="lazy"
-          sizes="(max-width: 540px) 100vw, 540px" alt=""
-          class="teaser-copy-1-copy-copy-copy-copy-copy-copy" /><img src="images/mini_zs_ant_hill.webp" loading="lazy"
-          alt="" class="teaser" /><img
-          src="images/mini_Mendlovo_Namesti.webp"
-          loading="lazy" sizes="(max-width: 540px) 100vw, 540px"
-          alt="" class="teaser-copy-1-copy-copy-copy-copy-copy-copy-copy" /><img
-          src="images/mini_RD_Tetcice.webp"
-          loading="lazy" sizes="(max-width: 600px) 100vw, 600px"
-          alt="" class="teaser-copy-1-copy-copy-copy-copy" /></div>
-      <div class="strip-carouselu"><img
-          src="images/mini_zahradni_ucebna.webp"
-          loading="lazy" alt="" class="teaser-copy-1-copy-copy-copy-copy-copy" /><img
-          src="images/mini_Chata_Pteni.webp"
-          loading="lazy" width="Auto" sizes="(max-width: 560px) 100vw, 560px" alt=""
-          class="teaser-copy-1" /><img
-          src="images/mini_Kolonizacni_Parez.webp"
-          loading="lazy" sizes="(max-width: 540px) 100vw, 540px"
-          alt="" class="teaser" /><img
-          src="images/mini_RD_Dobrovskeho_48.webp"
-          loading="lazy" sizes="(max-width: 620px) 100vw, 620px"
-          alt="" class="teaser-copy-1-copy" /></div>
-      <div class="strip-carouselu"><img src="images/mini_stodola.webp" loading="lazy"
-          sizes="(max-width: 540px) 100vw, 540px" alt=""
-          class="teaser-copy-1-copy-copy-copy-copy-copy-copy" /><img src="images/mini_zs_ant_hill.webp" loading="lazy"
-          alt="" class="teaser" /><img
-          src="images/mini_Mendlovo_Namesti.webp"
-          loading="lazy" sizes="(max-width: 540px) 100vw, 540px"
-          alt="" class="teaser-copy-1-copy-copy-copy-copy-copy-copy-copy" /><img
-          src="images/mini_RD_Tetcice.webp"
-          loading="lazy" sizes="(max-width: 600px) 100vw, 600px"
-          alt="" class="teaser-copy-1-copy-copy-copy-copy" /></div>
-    </div>
+      class="carousel">
+      <div class="strip-carouselu">
+        <div class="dynamic-container">
+          <div class="thumbnail-frame"><img src="images/mini_stodola.webp" loading="lazy" alt="" class="ministodola" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_RD_Tetcice.webp" loading="lazy" alt="" class="RDTetcice" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_Mendlovo_Namesti.webp" loading="lazy" alt="" class="MendlovoNamesti" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_Chata_Pteni.webp" loading="lazy" alt="" class="ChataPteni" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_zahradni_ucebna.webp" loading="lazy" alt="" class="zahradniucebna" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_Kolonizacni_Parez.webp" loading="lazy" alt="" class="KolonizacniParez" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_RD_Dobrovskeho_48.webp" loading="lazy" alt="" class="RDDobrovskeho48" /></div>
+          <div class="thumbnail-frame"><img src="images/mini_zs_ant_hill.webp" loading="lazy" alt="" class="zsanthill" /></div>
+        </div>
+      </div>
+    -->
+      
   </div>
-  <div data-w-id="e173a967-1491-1bc5-5097-931e24b3e2c6" style="opacity:0;display:none" class="wrapper">
+
+  <!-- ==========================================================================
+       GALERIE PROJEKTŮ
+       Pozn.: id="tvorba" bylo duplikované na všech 17 sekcích (neplatné HTML,
+       nikde není odkazované ani z CSS/JS), proto smazáno – stylování jede
+       jen přes class="tverec".
+       ========================================================================== -->
 
 
-    <div 
-      class="empty-spacer">
-    </div>
-    
-    <section id="tvorba" class="tverec">
+  <aside class="section-preview-rail" aria-label="Page sections">
+    <div class="section-preview-list"></div>
+    <div class="section-preview-scrollbar"><span></span></div>
+  </aside>
+
+  <div data-w-id="e173a967-1491-1bc5-5097-931e24b3e2c6" style="opacity:0;display:none" class="wrapper" loading = 'eager'>
+
+
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 1.webp" class="layer base" alt="">
-        <img height="Auto" alt="" src="images/mini_logo_animace.webp" loading="lazy" class="logo" />
+        <img src="images/Artboard 1.webp" class="layer base" alt="" />
+        <img style="-webkit-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
+                    -moz-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
+                    -ms-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
+                    transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0)"
+            height="Auto" alt="" src="images/mini_logo_animace.webp" loading="lazy" data-w-id="4e93d58e-73c2-1a0c-4d96-5f18e5192429" class="logo" />
       </div>
     </section>
 
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 2.webp" class="layer base" alt="">
-        <img src="images/1.webp" class="layer top"alt="">
+        <img src="images/Artboard 2.webp" class="layer base" alt="" />
+        <img src="images/1.webp" class="layer top" alt="" />
       </div>
     </section>
 
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 3.webp" class="layer base" alt="">
-        <img src="images/2.webp" class="layer top"alt="">
+        <img src="images/Artboard 3.webp" class="layer base" alt="" />
+        <img src="images/2.webp" class="layer top" alt="" />
       </div>
     </section>
 
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 4.webp" class="layer base" alt="">
-        <img src="images/3.webp" class="layer top"alt="">
-      </div>
-    </section>
-    
-    <section id="tvorba" class="tverec">
-      <a
-        href="https://drive.google.com/file/d/1Hd12uGSKEb3rxbqVdwTmqdEDrZ-vW-nq/view?usp=drive_link" target="_blank"
-        class="qr-plan-rka w-inline-block"
-      ></a>
-      <div class="overlay-wrap">
-        <img src="images/Artboard 5.webp" class="layer base" alt="">
-        <img src="images/4.webp" class="layer top"alt="">
+        <img src="images/Artboard 4.webp" class="layer base" alt="" />
+        <img src="images/3.webp" class="layer top" alt="" />
       </div>
     </section>
 
-
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
+      <a href="https://drive.google.com/file/d/1Hd12uGSKEb3rxbqVdwTmqdEDrZ-vW-nq/view?usp=drive_link" target="_blank"
+        class="qr-plan-rka w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 6.webp" class="layer base" alt="">
-        <img src="images/5.webp" class="layer top"alt="">
+        <img src="images/Artboard 5.webp" class="layer base" alt="" />
+        <img src="images/4.webp" class="layer top" alt="" />
       </div>
     </section>
 
-
-    <section id="tvorba" class="tverec">
-      <a
-        href="https://drive.google.com/file/d/1bycWqeuaZRNzhv_svaCH6LSOCSJHPKHZ/view?usp=drive_link" target="_blank"
-        class="qr-jihmorn-m w-inline-block"
-      ></a>
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 7.webp" class="layer base" alt="">
-        <img src="images/6.webp" class="layer top"alt="">
+        <img src="images/Artboard 6.webp" class="layer base" alt="" />
+        <img src="images/5.webp" class="layer top" alt="" />
       </div>
     </section>
 
-
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
+      <a href="https://drive.google.com/file/d/1bycWqeuaZRNzhv_svaCH6LSOCSJHPKHZ/view?usp=drive_link" target="_blank"
+        class="qr-jihmorn-m w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 8.webp" class="layer base" alt="">
-        <img src="images/7.webp" class="layer top"alt="">
+        <img src="images/Artboard 7.webp" class="layer base" alt="" />
+        <img src="images/6.webp" class="layer top" alt="" />
       </div>
     </section>
 
-
-    <section id="tvorba" class="tverec">
-      <a
-        href="https://drive.google.com/file/d/1kJvyiRsXq-7AsMASJI4DKrqHwnA929B4/view?usp=drive_link" target="_blank"
-        class="qr-dobrovsk-ho w-inline-block"
-      ></a>
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 9.webp" class="layer base" alt="">
-        <img src="images/8.webp" class="layer top"alt="">
+        <img src="images/Artboard 8.webp" class="layer base" alt="" />
+        <img src="images/7.webp" class="layer top" alt="" />
       </div>
     </section>
 
-    
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
+      <a href="https://drive.google.com/file/d/1kJvyiRsXq-7AsMASJI4DKrqHwnA929B4/view?usp=drive_link" target="_blank"
+        class="qr-dobrovsk-ho w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 10.webp" class="layer base" alt="">
+        <img src="images/Artboard 9.webp" class="layer base" alt="" />
+        <img src="images/8.webp" class="layer top" alt="" />
       </div>
     </section>
 
+    <section class="tverec">
+      <div class="overlay-wrap">
+        <img src="images/Artboard 10.webp" class="layer base" alt="" />
+      </div>
+    </section>
 
-    <section id="tvorba" class="tverec">
-       <a
-        href="https://drive.google.com/file/d/1K_0g-IBqYc9xkl6611moJD8LmUvUZ0_o/view?usp=drive_link" target="_blank"
+    <section class="tverec">
+      <a href="https://drive.google.com/file/d/1K_0g-IBqYc9xkl6611moJD8LmUvUZ0_o/view?usp=drive_link" target="_blank"
         class="qr-simulace w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 11.webp" class="layer base" alt="">
+        <img src="images/Artboard 11.webp" class="layer base" alt="" />
       </div>
     </section>
-    
-    
-    <section id="tvorba" class="tverec">
-       <a
-        href="https://drive.google.com/file/d/17PMnK_rycCPal-lWCiuRFlHcWOWf1-GX/view?usp=drive_link" target="_blank"
+
+    <section class="tverec">
+      <a href="https://drive.google.com/file/d/17PMnK_rycCPal-lWCiuRFlHcWOWf1-GX/view?usp=drive_link" target="_blank"
         class="qr-simulace w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 12.webp" class="layer base" alt="">
+        <img src="images/Artboard 12.webp" class="layer base" alt="" />
       </div>
     </section>
 
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 13.webp" class="layer base" alt="">
+        <img src="images/Artboard 13.webp" class="layer base" alt="" />
       </div>
     </section>
 
-
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 14.webp" class="layer base" alt="">
+        <img src="images/Artboard 14.webp" class="layer base" alt="" />
       </div>
     </section>
 
-
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 15.webp" class="layer base" alt="">
+        <img src="images/Artboard 15.webp" class="layer base" alt="" />
       </div>
     </section>
 
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 16.webp" class="layer base" alt="">
+        <img src="images/Artboard 16.webp" class="layer base" alt="" />
       </div>
     </section>
 
-    <section id="tvorba" class="tverec">
+    <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 17.webp" class="layer base" alt="">
+        <img src="images/Artboard 17.webp" class="layer base" alt="" />
       </div>
     </section>
-    
+
   </div>
+
+  <script>
+    (() => {
+      const rail = document.querySelector('.section-preview-rail');
+      const list = rail?.querySelector('.section-preview-list');
+      const wrapper = document.querySelector('.wrapper');
+      const loadingScreen = document.querySelector('.na-tac-obrazovka');
+      if (!rail || !list || !wrapper || !loadingScreen) return;
+
+      const sections = [...wrapper.querySelectorAll('.tverec')];
+      sections.forEach((section, index) => {
+        const source = section.querySelector('img.layer.base, img');
+        if (!source) return;
+
+        const preview = document.createElement('button');
+        preview.type = 'button';
+        preview.className = 'section-preview';
+        preview.dataset.index = index;
+        preview.setAttribute('aria-label', `Go to section ${index + 1}`);
+        preview.innerHTML = `<img src="${source.src}" alt="" loading="eager" decoding="async">`;
+        preview.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+        list.appendChild(preview);
+      });
+
+      const previews = [...list.querySelectorAll('.section-preview')];
+      const refreshRail = () => {
+        const loadingVisible = getComputedStyle(loadingScreen).display !== 'none' && Number(getComputedStyle(loadingScreen).opacity) > 0;
+        rail.classList.toggle('is-visible', !loadingVisible);
+      };
+
+      const updateActivePreview = () => {
+        if (!previews.length) return;
+        const viewportCenter = window.innerHeight / 2;
+        let activeIndex = 0;
+        let closestDistance = Infinity;
+        sections.forEach((section, index) => {
+          const distance = Math.abs(section.getBoundingClientRect().top + section.offsetHeight / 2 - viewportCenter);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            activeIndex = index;
+          }
+        });
+        previews.forEach((preview, index) => {
+          preview.classList.toggle('is-active', index === activeIndex);
+          preview.classList.toggle('is-first', index === 0 && index === activeIndex);
+          preview.classList.toggle('is-last', index === previews.length - 1 && index === activeIndex);
+        });
+        const progress = sections.length > 1 ? activeIndex / (sections.length - 1) : 0;
+        rail.querySelector('.section-preview-scrollbar span').style.top = `${progress * 100}%`;
+      };
+
+      let scrollFrame;
+      const scheduleActivePreview = () => {
+        if (scrollFrame) return;
+        scrollFrame = requestAnimationFrame(() => {
+          scrollFrame = null;
+          updateActivePreview();
+        });
+      };
+
+      previews.forEach(preview => preview.querySelector('img')?.decode?.().catch(() => {}));
+      const observer = new MutationObserver(refreshRail);
+      observer.observe(loadingScreen, { attributes: true, attributeFilter: ['style', 'class'] });
+      observer.observe(wrapper, { attributes: true, attributeFilter: ['style', 'class'] });
+      window.addEventListener('scroll', scheduleActivePreview, { passive: true });
+      window.addEventListener('resize', updateActivePreview);
+      refreshRail();
+      updateActivePreview();
+    })();
+  </script>
+
   <script src="js/jquery.js?site=69570ca7f9ee48a5ae6cb6f5" type="text/javascript"></script>
   <script src="js/webflow.schunk.36b8fb49256177c8.js" type="text/javascript"></script>
   <script src="js/webflow-script.js" type="text/javascript"></script>
