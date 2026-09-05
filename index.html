@@ -6,7 +6,7 @@
   <title>portfolio</title>
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="Webflow" name="generator" />
-  <link href="css/portfolio-cz.webflow.shared.614758680.css" rel="stylesheet" type="text/css" />
+  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=4" rel="stylesheet" type="text/css" />
   <style>
     .loading-marquee-row {
       width: 100vw !important;
@@ -14,6 +14,7 @@
     }
 
   </style>
+  <script>
     ! function(o, c) {
       var n = c.documentElement,
         t = " w-mod-";
@@ -66,7 +67,18 @@
 
     <div class="loading-stats" aria-live="polite">
       <div class="loading-stats-heading">Loading site</div>
-      <div class="loading-stats-track"><div class="loading-stats-progress"></div></div>
+      <div class="loading-stats-track-stack">
+        <div class="loading-stats-track-labels">
+          <span>Loading screen</span>
+          <span>Whole page</span>
+        </div>
+        <div class="loading-stats-track loading-stats-track--screen">
+          <div class="loading-stats-progress loading-stats-progress--screen"></div>
+        </div>
+        <div class="loading-stats-track loading-stats-track--page">
+          <div class="loading-stats-progress loading-stats-progress--page"></div>
+        </div>
+      </div>
       <div class="loading-stats-grid">
         <div><span class="loading-stats-label">Site size</span><strong data-loading-size>calculating</strong></div>
         <div><span class="loading-stats-label">Download speed</span><strong data-loading-speed>calculating</strong></div>
@@ -224,50 +236,96 @@
         const stats = document.querySelector('.loading-stats');
         if (!stats) return;
 
-        const progress = stats.querySelector('.loading-stats-progress');
+        const screenProgress = stats.querySelector('.loading-stats-progress--screen');
+        const pageProgress = stats.querySelector('.loading-stats-progress--page');
         const size = stats.querySelector('[data-loading-size]');
         const speed = stats.querySelector('[data-loading-speed]');
         const downloaded = stats.querySelector('[data-loading-downloaded]');
         const startedAt = performance.now();
-        const assetUrls = [...new Set([...document.querySelectorAll('.loading-marquee-item img')].map(image => image.src))];
-        let totalBytes = 0;
-        let downloadedBytes = 0;
-        let completedAssets = 0;
+
+        const loadingAssetUrls = [...new Set(
+          [...document.querySelectorAll('.loading-marquee-item img, .the-background-video-l-va video source')]
+            .map(el => el.src || el.href)
+            .filter(Boolean)
+        )];
+
+        let loadingTotalBytes = 0;
+        let loadingDownloadedBytes = 0;
+        let loadingCompletedAssets = 0;
+        let wholePageTotalBytes = 0;
+        let wholePageDownloadedBytes = 0;
+        let wholePageCompletedAssets = 0;
 
         const formatBytes = (bytes) => {
-          if (!bytes) return 'calculating';
+          if (!Number.isFinite(bytes) || bytes <= 0) return 'calculating';
           const units = ['B', 'KB', 'MB', 'GB'];
           const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
           return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
         };
 
-        const updateStats = () => {
-          const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
-          const loadedRatio = assetUrls.length ? completedAssets / assetUrls.length : 0;
+        const PAGE_TARGET_SIZE_BYTES = 241 * 1024 * 1024;
 
-          progress.style.width = `${Math.round(loadedRatio * 100)}%`;
-          downloaded.textContent = formatBytes(downloadedBytes);
-          size.textContent = formatBytes(totalBytes);
-          speed.textContent = downloadedBytes ? `${formatBytes(downloadedBytes / elapsedSeconds)}/s` : 'calculating';
+        const setProgress = (bar, value) => {
+          if (!bar) return;
+          bar.style.width = `${Math.min(Math.max(value, 0), 100)}%`;
         };
 
-        updateStats();
-        window.setInterval(updateStats, 250);
+        const updateStats = () => {
+          const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
+          const loadingRatio = loadingAssetUrls.length ? loadingCompletedAssets / loadingAssetUrls.length : 0;
 
-        assetUrls.forEach(url => {
-          fetch(url)
+          const pageSizeBytes = wholePageTotalBytes > 0 ? Math.min(wholePageTotalBytes, PAGE_TARGET_SIZE_BYTES) : PAGE_TARGET_SIZE_BYTES;
+          const pageDownloadedBytes = wholePageDownloadedBytes > 0
+            ? Math.min(wholePageDownloadedBytes, pageSizeBytes)
+            : Math.min(loadingDownloadedBytes || 0, pageSizeBytes);
+          const pageRatio = pageSizeBytes ? pageDownloadedBytes / pageSizeBytes : 0;
+
+          setProgress(screenProgress, loadingRatio * 100);
+          setProgress(pageProgress, pageRatio * 100);
+
+          downloaded.textContent = formatBytes(pageDownloadedBytes);
+          size.textContent = formatBytes(pageSizeBytes);
+          speed.textContent = pageDownloadedBytes ? `${formatBytes(pageDownloadedBytes / elapsedSeconds)}/s` : 'calculating';
+        };
+
+        loadingAssetUrls.forEach((url) => {
+          fetch(url, { cache: 'force-cache' })
             .then(response => response.blob())
             .then(blob => {
-              totalBytes += blob.size;
-              downloadedBytes += blob.size;
-              completedAssets += 1;
+              loadingTotalBytes += blob.size;
+              loadingDownloadedBytes += blob.size;
+              loadingCompletedAssets += 1;
               updateStats();
             })
             .catch(() => {
-              completedAssets += 1;
+              loadingCompletedAssets += 1;
               updateStats();
             });
         });
+
+        const refreshPageMetrics = () => {
+          const entries = typeof performance.getEntriesByType === 'function'
+            ? performance.getEntriesByType('resource').filter((entry) => {
+                const name = entry.name || '';
+                return name && (name.startsWith(window.location.origin) || name.startsWith('file://'));
+              })
+            : [];
+
+          if (!entries.length) {
+            wholePageCompletedAssets = Math.max(wholePageCompletedAssets, 1);
+            updateStats();
+            return;
+          }
+
+          wholePageTotalBytes = entries.reduce((sum, entry) => sum + (Number(entry.transferSize || entry.encodedBodySize || 0) || 0), 0);
+          wholePageDownloadedBytes = entries.reduce((sum, entry) => sum + ((entry.responseEnd > 0 || entry.transferSize > 0 || entry.encodedBodySize > 0) ? (Number(entry.transferSize || entry.encodedBodySize || 0) || 0) : 0), 0);
+          wholePageCompletedAssets = entries.filter((entry) => entry.responseEnd > 0 || entry.transferSize > 0 || entry.encodedBodySize > 0).length;
+          updateStats();
+        };
+
+        updateStats();
+        window.addEventListener('load', refreshPageMetrics);
+        window.setInterval(refreshPageMetrics, 500);
       })();
     </script>
 
@@ -289,25 +347,66 @@
           <div class="thumbnail-frame"><img src="images/mini_zs_ant_hill.webp" loading="lazy" alt="" class="zsanthill" /></div>
         </div>
       </div>
-    -->
-      
+    --> 
   </div>
-
-  <!-- ==========================================================================
-       GALERIE PROJEKTŮ
-       Pozn.: id="tvorba" bylo duplikované na všech 17 sekcích (neplatné HTML,
-       nikde není odkazované ani z CSS/JS), proto smazáno – stylování jede
-       jen přes class="tverec".
-       ========================================================================== -->
-
 
   <aside class="section-preview-rail" aria-label="Page sections">
     <div class="section-preview-list"></div>
     <div class="section-preview-scrollbar"><span></span></div>
   </aside>
 
-  <div data-w-id="e173a967-1491-1bc5-5097-931e24b3e2c6" style="opacity:0;display:none" class="wrapper" loading = 'eager'>
+  <aside class="site-info-panel" aria-label="Live information about this visit">
+    <div class="site-info-panel__header">
+      <span class="site-info-panel__signal" aria-hidden="true"></span>
+      <span>Live diagnostics</span>
+      <span class="site-info-panel__live">LIVE</span>
+    </div>
+    <div class="site-info-panel__group">
+      <div class="site-info-panel__group-title">Site / server</div>
+      <div class="site-info-row"><span>Version date</span><strong data-site-info="version">02.09.2026</strong></div>
+      <div class="site-info-row"><span>Server</span><strong data-site-info="server">detecting...</strong></div>
+      <div class="site-info-row"><span>Protocol</span><strong data-site-info="protocol">detecting...</strong></div>
+      <div class="site-info-row"><span>Security</span><strong data-site-info="security">detecting...</strong></div>
+      <div class="site-info-row"><span>Ping / jitter</span><strong data-site-info="ping">measuring...</strong></div>
+      <div class="site-info-row"><span>Public IP</span><strong data-site-info="ip">checking...</strong></div>
+      <div class="site-info-row"><span>DNS</span><strong data-site-info="dns">browser hidden</strong></div>
+      <div class="site-info-row"><span>Network</span><strong data-site-info="network">detecting...</strong></div>
+      <div class="site-info-row"><span>Download estimate</span><strong data-site-info="download">detecting...</strong></div>
+      <div class="site-info-row"><span>Signal consistency</span><strong data-site-info="consistency">measuring...</strong></div>
+    </div>
+    <div class="site-info-panel__group">
+      <div class="site-info-panel__group-title">Device / render</div>
+      <div class="site-info-row"><span>Device</span><strong data-site-info="device">detecting...</strong></div>
+      <div class="site-info-row"><span>OS / platform</span><strong data-site-info="platform">detecting...</strong></div>
+      <div class="site-info-row"><span>CPU threads</span><strong data-site-info="cores">detecting...</strong></div>
+      <div class="site-info-row"><span>Memory hint</span><strong data-site-info="memory">detecting...</strong></div>
+      <div class="site-info-row"><span>Render power</span><strong data-site-info="power">calculating...</strong></div>
+      <div class="site-info-row"><span>Viewport</span><strong data-site-info="viewport">detecting...</strong></div>
+      <div class="site-info-row"><span>Pixel ratio</span><strong data-site-info="dpr">detecting...</strong></div>
+      <div class="site-info-row"><span>Color depth</span><strong data-site-info="color">detecting...</strong></div>
+      <div class="site-info-row"><span>Touch points</span><strong data-site-info="touch">detecting...</strong></div>
+      <div class="site-info-row"><span>WebGL renderer</span><strong data-site-info="gpu">checking...</strong></div>
+    </div>
+    <div class="site-info-panel__group">
+      <div class="site-info-panel__group-title">Session / browser</div>
+      <div class="site-info-row"><span>Visible for</span><strong data-site-info="time">0:00</strong></div>
+      <div class="site-info-row"><span>Page weight</span><strong data-site-info="weight">calculating...</strong></div>
+      <div class="site-info-row"><span>Loaded assets</span><strong data-site-info="assets">counting...</strong></div>
+      <div class="site-info-row"><span>Browser language</span><strong data-site-info="language">detecting...</strong></div>
+      <div class="site-info-row"><span>Visitor timezone</span><strong data-site-info="timezone">detecting...</strong></div>
+      <div class="site-info-row"><span>Host location</span><strong data-site-info="host-location">checking...</strong></div>
+      <div class="site-info-row"><span>Host IP</span><strong data-site-info="host-ip">checking...</strong></div>
+      <div class="site-info-row"><span>Host provider</span><strong data-site-info="host-provider">checking...</strong></div>
+      <div class="site-info-row"><span>Browser mode</span><strong data-site-info="mode">detecting...</strong></div>
+      <div class="site-info-row"><span>Reduced motion</span><strong data-site-info="motion">detecting...</strong></div>
+      <div class="site-info-row"><span>Online state</span><strong data-site-info="online">detecting...</strong></div>
+      <div class="site-info-row"><span>Scroll progress</span><strong data-site-info="scroll">0%</strong></div>
+      <div class="site-info-row"><span>DOM nodes</span><strong data-site-info="dom">counting...</strong></div>
+    </div>
+  </aside>
+  <button class="site-info-toggle" type="button" aria-label="Open live diagnostics" aria-expanded="false">+</button>
 
+  <div data-w-id="e173a967-1491-1bc5-5097-931e24b3e2c6" style="opacity:0;display:none" class="wrapper" loading = 'eager'>
 
     <section class="tverec">
       <div class="overlay-wrap">
@@ -439,6 +538,8 @@
   <script>
     (() => {
       const rail = document.querySelector('.section-preview-rail');
+      const infoPanel = document.querySelector('.site-info-panel');
+      const toggle = document.querySelector('.site-info-toggle');
       const list = rail?.querySelector('.section-preview-list');
       const wrapper = document.querySelector('.wrapper');
       const loadingScreen = document.querySelector('.na-tac-obrazovka');
@@ -454,7 +555,7 @@
         preview.className = 'section-preview';
         preview.dataset.index = index;
         preview.setAttribute('aria-label', `Go to section ${index + 1}`);
-        preview.innerHTML = `<img src="${source.src}" alt="" loading="eager" decoding="async">`;
+        preview.innerHTML = `<img src="${source.src}" alt="" loading="lazy" decoding="async">`;
         preview.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         list.appendChild(preview);
       });
@@ -463,6 +564,8 @@
       const refreshRail = () => {
         const loadingVisible = getComputedStyle(loadingScreen).display !== 'none' && Number(getComputedStyle(loadingScreen).opacity) > 0;
         rail.classList.toggle('is-visible', !loadingVisible);
+        infoPanel?.classList.toggle('is-visible', !loadingVisible);
+        toggle?.classList.toggle('is-visible', !loadingVisible);
       };
 
       const updateActivePreview = () => {
@@ -503,6 +606,134 @@
       window.addEventListener('resize', updateActivePreview);
       refreshRail();
       updateActivePreview();
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const panel = document.querySelector('.site-info-panel');
+      const toggle = document.querySelector('.site-info-toggle');
+      if (!panel) return;
+      const startedAt = performance.now();
+      const narrowFormat = matchMedia('(max-aspect-ratio: 2/1)');
+      const syncPanelMode = () => {
+        if (!narrowFormat.matches) {
+          panel.classList.remove('is-open');
+          toggle?.setAttribute('aria-expanded', 'false');
+        }
+      };
+      toggle?.addEventListener('click', () => {
+        const isOpen = panel.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      });
+      narrowFormat.addEventListener?.('change', syncPanelMode);
+      syncPanelMode();
+      const set = (key, value) => {
+        const element = panel.querySelector(`[data-site-info="${key}"]`);
+        if (element) element.textContent = value;
+      };
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const formatBytes = bytes => bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
+      const browserMode = () => {
+        const userAgent = navigator.userAgent;
+        if (/Edg\//.test(userAgent)) return 'Edge';
+        if (/Chrome\//.test(userAgent)) return 'Chrome';
+        if (/Firefox\//.test(userAgent)) return 'Firefox';
+        if (/Safari\//.test(userAgent)) return 'Safari';
+        return 'Browser';
+      };
+      const getGpu = () => {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return 'unavailable';
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).replace(/\s+/g, ' ').slice(0, 28) : 'WebGL active';
+      };
+      const detectHost = async () => {
+        const hostname = location.hostname;
+        if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+          set('host-location', 'local / unavailable');
+          set('host-ip', 'private');
+          set('host-provider', 'local server');
+          return;
+        }
+        if (hostname.endsWith('.github.io')) set('host-provider', 'GitHub Pages');
+        try {
+          const dnsResponse = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`, { cache: 'no-store' });
+          const dnsData = await dnsResponse.json();
+          const hostIp = dnsData.Answer?.find(answer => answer.type === 1)?.data;
+          if (!hostIp) throw new Error('Host IP unavailable');
+          set('host-ip', hostIp);
+          const geoResponse = await fetch(`https://ipapi.co/${hostIp}/json/`, { cache: 'no-store' });
+          const geoData = await geoResponse.json();
+          const locationLabel = [geoData.city, geoData.region, geoData.country_code].filter(Boolean).join(', ');
+          set('host-location', locationLabel || 'unavailable');
+          if (geoData.org && !hostname.endsWith('.github.io')) set('host-provider', geoData.org.replace(/^AS\d+\s*/i, '').slice(0, 24));
+        } catch (error) {
+          set('host-location', 'blocked / unavailable');
+          set('host-ip', 'blocked / unavailable');
+          if (!hostname.endsWith('.github.io')) set('host-provider', 'unknown');
+        }
+      };
+      const samplePing = async () => {
+        const samples = [];
+        for (let index = 0; index < 3; index += 1) {
+          const began = performance.now();
+          try {
+            await fetch(`${location.origin}/?ping=${Date.now()}-${index}`, { method: 'HEAD', cache: 'no-store' });
+            samples.push(performance.now() - began);
+          } catch (error) {
+            return;
+          }
+        }
+        const average = samples.reduce((total, value) => total + value, 0) / samples.length;
+        const jitter = Math.max(...samples) - Math.min(...samples);
+        set('ping', `${Math.round(average)} ms / ${Math.round(jitter)} ms`);
+        set('consistency', jitter < 12 ? 'stable' : jitter < 35 ? 'variable' : 'unstable');
+      };
+      const updateSession = () => {
+        const seconds = Math.floor((performance.now() - startedAt) / 1000);
+        set('time', `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`);
+        set('scroll', `${Math.round((scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight)) * 100)}%`);
+        set('online', navigator.onLine ? 'online' : 'offline');
+        set('dom', document.getElementsByTagName('*').length.toLocaleString());
+      };
+      set('server', location.host || 'local file');
+      set('protocol', location.protocol.replace(':', '').toUpperCase());
+      set('security', location.protocol === 'https:' ? 'secure / HTTPS' : 'not encrypted');
+      set('device', /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop');
+      set('platform', navigator.platform || 'hidden');
+      set('cores', navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency}` : 'hidden');
+      set('memory', navigator.deviceMemory ? `${navigator.deviceMemory} GB hint` : 'hidden');
+      set('power', (navigator.hardwareConcurrency || 2) >= 8 && (navigator.deviceMemory || 4) >= 8 ? 'high' : (navigator.hardwareConcurrency || 2) >= 4 ? 'medium' : 'light');
+      set('viewport', `${innerWidth} x ${innerHeight}`);
+      set('dpr', `${devicePixelRatio}x`);
+      set('color', `${screen.colorDepth}-bit`);
+      set('touch', `${navigator.maxTouchPoints || 0}`);
+      set('gpu', getGpu());
+      set('language', navigator.language || 'hidden');
+      set('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || 'hidden');
+      set('mode', browserMode());
+      set('motion', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full');
+      set('assets', `${performance.getEntriesByType('resource').length}`);
+      const pageSize = performance.getEntriesByType('resource').reduce((total, resource) => total + (resource.transferSize || 0), 0);
+      set('weight', pageSize ? formatBytes(pageSize) : 'cached');
+      if (connection) {
+        set('network', [connection.effectiveType, connection.type].filter(Boolean).join(' / ') || 'connected');
+        set('download', connection.downlink ? `${connection.downlink} Mb/s est.` : 'hidden');
+      } else {
+        set('network', 'connected');
+        set('download', 'browser hidden');
+      }
+      fetch('https://api64.ipify.org?format=json', { cache: 'no-store' }).then(response => response.json()).then(data => set('ip', data.ip || 'unavailable')).catch(() => set('ip', 'unavailable'));
+      detectHost();
+      samplePing();
+      updateSession();
+      setInterval(updateSession, 1000);
+      addEventListener('scroll', updateSession, { passive: true });
+      addEventListener('resize', () => set('viewport', `${innerWidth} x ${innerHeight}`));
+      addEventListener('online', updateSession);
+      addEventListener('offline', updateSession);
     })();
   </script>
 
