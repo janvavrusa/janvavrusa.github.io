@@ -235,7 +235,7 @@ a:hover {
 }
 
 .section-preview-rail {
-  --preview-size: 5.294vh; /* 90vh / počet preview sections */
+  --preview-size: calc(90vh / 18); /* 90vh / počet preview sections */
   position: fixed;
   top: 5vh;
   right: 0vh;
@@ -807,4 +807,43 @@ a:hover {
   bottom: -76.5%;
   left: 43%;
   z-index: 10;
+}
+
+.bakalarka-section {
+  position: relative;
+}
+
+.qr-bakalarka-video,
+.qr-text-bakalarska-prace {
+  aspect-ratio: 1;
+  background-position: 0 0;
+  background-size: cover;
+  display: block;
+  position: absolute;
+  width: 15%;
+  z-index: 10;
+}
+
+.qr-bakalarka-video {
+  background-image: url("../images/QR bakalarka video.svg");
+  top: 39.0%;
+  left: 26.5%;
+}
+
+.qr-text-bakalarska-prace {
+  background-image: url("../images/QR tisku bakalářské práce.svg");
+  top: 21.0%;
+  left: 75%;
+}
+
+.bakalarka-video {
+  position: absolute;
+  aspect-ratio: 1;
+  top: 13.0%;
+  left: 6.5%;
+  width: 33%;
+  height: auto;
+  object-fit: cover;
+  z-index: 2;
+  pointer-events: none;
 }

@@ -6,7 +6,7 @@
   <title>portfolio</title>
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="Webflow" name="generator" />
-  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=4" rel="stylesheet" type="text/css" />
+  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=6" rel="stylesheet" type="text/css" />
   <style>
     .loading-marquee-row {
       width: 100vw !important;
@@ -419,6 +419,18 @@
       </div>
     </section>
 
+    <section class="tverec bakalarka-section">
+      <a href="https://drive.google.com/file/d/116q_oTLPDa2wpRth5JcTtFKuBY7p1BJ5/view?usp=drive_link" target="_blank"
+        rel="noopener" class="qr-text-bakalarska-prace w-inline-block" aria-label="Open bachelor's thesis"></a>
+      <a href="images/animace bakalarka.mp4" target="_blank" rel="noopener" class="qr-bakalarka-video w-inline-block"
+        aria-label="Open bachelor's thesis animation"></a>
+      <div class="overlay-wrap">
+        <img src="images/Artboard 18.webp" class="layer base" alt="" />
+        <video class="bakalarka-video" data-video-src="images/animace bakalarka 8x small.mp4" loop muted playsinline preload="none"
+          aria-label="Bachelor's thesis animation"></video>
+      </div>
+    </section>
+
     <section class="tverec">
       <div class="overlay-wrap">
         <img src="images/Artboard 2.webp" class="layer base" alt="" />
@@ -537,6 +549,37 @@
 
   <script>
     (() => {
+      const videos = document.querySelectorAll('.bakalarka-video');
+      const ensureVideoLoaded = (video) => {
+        if (!video.src) {
+          video.src = video.dataset.videoSrc;
+          video.load();
+        }
+      };
+      const loadAndPlayVideo = (video) => {
+        ensureVideoLoaded(video);
+        video.playbackRate = 1;
+        video.play().catch(() => {});
+      };
+      const pauseVideo = (video) => video.pause();
+
+      if ('IntersectionObserver' in window) {
+        const visibilityObserver = new IntersectionObserver((entries) => {
+          entries.forEach(({ target, isIntersecting }) => {
+            if (isIntersecting) loadAndPlayVideo(target);
+            else pauseVideo(target);
+          });
+        }, { threshold: 0.01 });
+
+        videos.forEach((video) => {
+          ensureVideoLoaded(video);
+          video.playbackRate = 1;
+          visibilityObserver.observe(video);
+        });
+      } else {
+        videos.forEach(loadAndPlayVideo);
+      }
+
       const rail = document.querySelector('.section-preview-rail');
       const infoPanel = document.querySelector('.site-info-panel');
       const toggle = document.querySelector('.site-info-toggle');
