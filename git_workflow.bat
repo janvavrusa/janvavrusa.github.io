@@ -1,21 +1,35 @@
 @echo off
-:: Tento skript zautomatizuje celou sekvenci Gitu, kterou jste provedli rucne.
+setlocal
+cd /d "%~dp0"
 
-echo [1/5] Inicializace repozitare...
-git init
-
-echo [2/5] Pridavani souboru do indexu...
-git add .
-
-echo [3/5] Vytvareni commitu...
-git commit -m "my second big steps"
-
-echo [4/5] Nastaveni spravne adresy vzdaleneho repozitare (origin)...
-:: Pouzijeme set-url pro pripad, ze origin uz existuje, stejne jako ve vasem logu
+echo [1/5] Kontrola repozitare...
+git init || goto :error
 git remote set-url origin https://github.com/vavjarch-lab/portfolio.git 2>nul || git remote add origin https://github.com/vavjarch-lab/portfolio.git
 
-echo [5/5] Vynucene odesilani zmen na GitHub (master)...
-git push --force-with-lease origin master
+echo [2/5] Pridavani souboru do indexu...
+git add . || goto :error
 
-echo Hotovo!
+git diff --cached --quiet
+if %errorlevel%==0 goto :empty_commit
+
+echo [3/5] Vytvareni commitu se zmenami...
+git commit -m "Update portfolio" || goto :error
+goto :push
+
+:empty_commit
+echo [3/5] Repo je ciste, vytvarim retry commit pro GitHub Pages...
+git commit --allow-empty -m "Retry GitHub Pages deployment" || goto :error
+
+:push
+echo [4/5] Odesilani na GitHub...
+git push --set-upstream origin master || goto :error
+
+echo [5/5] Hotovo. GitHub Pages deployment byl spusten.
 pause
+exit /b 0
+
+:error
+echo.
+echo CHYBA: Deploy se nepodaril. Zkontrolujte vystup vyse.
+pause
+exit /b 1
