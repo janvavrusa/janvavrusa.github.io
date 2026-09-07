@@ -112,6 +112,14 @@ a:hover {
   height: 100vh;
 }
 
+.na-tac-obrazovka > .the-background-video-l-va {
+  z-index: 1;
+}
+
+.na-tac-obrazovka > .the-background-video-l-va > video {
+  z-index: 0;
+}
+
 .the-background-video-l-va {
   clear: right;
   aspect-ratio: auto;

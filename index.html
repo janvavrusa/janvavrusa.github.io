@@ -82,7 +82,7 @@
       <video
         id="bb9feef5-fd67-ec47-5ec6-5d0fb92f9311-video" autoplay="" loop=""
         style="background-image:url(&quot;images/FullHDr15Compressed-poster-00001.jpg&quot;)"
-        muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover">
+        muted="" playsinline="" preload="auto" data-wf-ignore="true" data-object-fit="cover">
         <source src="images/FullHDr15Compressed-transcode.mp4" data-wf-ignore="true" />
       </video>
     </div>
@@ -260,7 +260,7 @@
 
         buildRows();
         window.addEventListener('resize', buildRows);
-        preloadImages().then(() => {
+        window.loadingCarouselReady = preloadImages().then(() => {
           loadingCarousel?.classList.add('is-ready');
           loadingCarousel?.setAttribute('aria-busy', 'false');
         });
@@ -281,28 +281,25 @@
         const downloaded = stats.querySelector('[data-loading-downloaded]');
         const startedAt = performance.now();
         const siteSizeLabel = '274 MB';
-        let wholeWebTargetBytes = 0;
+        const wholeWebTargetBytes = 274 * 1024 * 1024;
 
         const absoluteUrl = (url) => new URL(url, document.baseURI).href;
+        const loadingScreenVideo = document.querySelector('.na-tac-obrazovka video');
+        const loadingScreenVideoSource = loadingScreenVideo?.currentSrc || loadingScreenVideo?.querySelector('source')?.src || '';
+        const loadingScreenVideoUrl = loadingScreenVideoSource ? absoluteUrl(loadingScreenVideoSource) : '';
         const priorityAssetUrls = [...new Set([
           ...[...document.querySelectorAll('.loading-marquee-item img')].map((el) => el.src),
-          ...[...document.querySelectorAll('.the-background-video-l-va video, .the-background-video-l-va video source')]
-            .flatMap((el) => [el.poster, el.src, el.currentSrc].filter(Boolean))
-        ].map(absoluteUrl))];
-        const wholeWebAssetUrls = [...new Set([
-          ...[...document.querySelectorAll('img[src], video[src], video source[src], link[href], script[src]')]
-            .map((el) => el.currentSrc || el.src || el.href)
-            .filter(Boolean)
-            .map(absoluteUrl)
-            .filter((url) => url.startsWith(window.location.origin) || url.startsWith('file:')),
-          ...[...document.querySelectorAll('video[data-video-src]')].map((el) => el.dataset.videoSrc)
-        ].map(absoluteUrl))];
+          loadingScreenVideo?.poster
+        ].filter(Boolean).map(absoluteUrl))];
+        let wholeWebAssetUrls = [];
 
         let priorityCompleted = 0;
         let downloadedBytes = 0;
         let wholeWebStarted = false;
         let wholeWebDone = false;
         let wholeWebSettled = 0;
+        let loadingScreenVideoReady = false;
+        let loadingScreenVideoBytes = 0;
 
         const formatBytes = (bytes) => {
           if (!Number.isFinite(bytes) || bytes <= 0) return 'calculating';
@@ -318,12 +315,16 @@
 
         const updateStats = () => {
           const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
-          const screenRatio = priorityAssetUrls.length ? priorityCompleted / priorityAssetUrls.length : 1;
-          const wholeWebRatio = wholeWebTargetBytes
-            ? Math.min(downloadedBytes / wholeWebTargetBytes, 1)
-            : 0;
+          const screenRatio = loadingScreenVideoReady && priorityAssetUrls.length
+            ? priorityCompleted / priorityAssetUrls.length
+            : Math.min(priorityCompleted / Math.max(priorityAssetUrls.length, 1), 0.99);
+          const wholeWebRatio = wholeWebSettled >= wholeWebAssetUrls.length && wholeWebAssetUrls.length
+            ? 1
+            : wholeWebTargetBytes
+              ? Math.min(downloadedBytes / wholeWebTargetBytes, 1)
+              : 0;
 
-          if (screenRatio >= 1 && screenStatus) {
+          if (loadingScreenVideoReady && screenRatio >= 1 && screenStatus) {
             screenStatus.textContent = '✓';
             screenStatus.classList.add('is-visible');
             screenStatus.setAttribute('aria-hidden', 'false');
@@ -341,6 +342,24 @@
           downloaded.textContent = formatBytes(downloadedBytes);
           size.textContent = siteSizeLabel;
           speed.textContent = downloadedBytes ? `${formatBytes(downloadedBytes / elapsedSeconds)}/s` : 'calculating';
+        };
+
+        const playLoadingScreenVideo = () => {
+          if (!loadingScreenVideo) return;
+          loadingScreenVideo.load();
+          loadingScreenVideo.play().catch(() => {});
+        };
+
+        const trackLoadingScreenVideo = () => {
+          if (!loadingScreenVideoUrl) return;
+          const entry = performance.getEntriesByName(loadingScreenVideoUrl).at(-1);
+          if (!entry) return;
+          const videoBytes = Number(entry.transferSize || entry.encodedBodySize || 0);
+          if (videoBytes > 0) {
+            downloadedBytes += Math.max(0, videoBytes - loadingScreenVideoBytes);
+            loadingScreenVideoBytes = videoBytes;
+            updateStats();
+          }
         };
 
         const downloadAsset = async (url) => {
@@ -374,33 +393,51 @@
           }
         };
 
-        const measureAssetSizes = async () => {
-          const sizes = await Promise.all(wholeWebAssetUrls.map(async (url) => {
-            try {
-              const response = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
-              return Number(response.headers.get('content-length')) || 0;
-            } catch (error) {
-              return 0;
-            }
-          }));
-          wholeWebTargetBytes = sizes.reduce((sum, assetSize) => sum + assetSize, 0);
-          updateStats();
-        };
+        const waitForLoadingScreenVideo = () => new Promise((resolve) => {
+          if (!loadingScreenVideo) {
+            resolve();
+            return;
+          }
+          const finish = () => {
+            loadingScreenVideoReady = true;
+            resolve();
+          };
+          loadingScreenVideo.addEventListener('canplay', finish, { once: true });
+          loadingScreenVideo.addEventListener('loadeddata', finish, { once: true });
+          if (loadingScreenVideo.readyState >= 2) finish();
+          window.setTimeout(finish, 10000);
+        });
+
+        const waitForLoadingCarousel = () => window.loadingCarouselReady || Promise.resolve();
 
         const startWholeWeb = async () => {
           if (wholeWebStarted) return;
           wholeWebStarted = true;
+          document.querySelectorAll('img[data-src]').forEach((image) => {
+            image.src = image.dataset.src;
+            image.loading = 'eager';
+            image.removeAttribute('data-src');
+          });
+          wholeWebAssetUrls = [...new Set([
+            ...[...document.querySelectorAll('img[src], link[href], script[src]')]
+              .map((el) => el.currentSrc || el.src || el.href)
+              .filter(Boolean)
+              .map(absoluteUrl)
+              .filter((url) => url.startsWith(window.location.origin) || url.startsWith('file:'))
+          ])];
           const remainingUrls = wholeWebAssetUrls.filter((url) => !priorityAssetUrls.includes(url));
           await loadAssets(remainingUrls, () => { wholeWebSettled += 1; });
           updateStats();
         };
 
+        playLoadingScreenVideo();
         updateStats();
-        measureAssetSizes().then(() => loadAssets(priorityAssetUrls, () => {
+        loadAssets(priorityAssetUrls, () => {
           priorityCompleted += 1;
           wholeWebSettled += 1;
-        })).then(startWholeWeb);
+        }).then(waitForLoadingScreenVideo).then(waitForLoadingCarousel).then(startWholeWeb);
         window.setInterval(() => {
+          trackLoadingScreenVideo();
           if (!wholeWebDone) updateStats();
         }, 250);
       })();
@@ -487,12 +524,12 @@
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 1.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 1.webp" class="layer base" alt="" />
         <img style="-webkit-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
                     -moz-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
                     -ms-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
                     transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0)"
-            height="Auto" alt="" src="images/mini_logo_animace.webp" loading="lazy" data-w-id="4e93d58e-73c2-1a0c-4d96-5f18e5192429" class="logo" />
+            height="Auto" alt="" data-src="images/mini_logo_animace.webp" loading="lazy" data-w-id="4e93d58e-73c2-1a0c-4d96-5f18e5192429" class="logo" />
       </div>
     </section>
 
@@ -502,7 +539,7 @@
       <a href="images/animace bakalarka.mp4" target="_blank" rel="noopener" class="qr-bakalarka-video w-inline-block"
         aria-label="Open bachelor's thesis animation"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 18.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 18.webp" class="layer base" alt="" />
         <video class="bakalarka-video" data-video-src="images/animace bakalarka 8x small.mp4" loop muted playsinline preload="none"
           aria-label="Bachelor's thesis animation"></video>
       </div>
@@ -510,22 +547,22 @@
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 2.webp" class="layer base" alt="" />
-        <img src="images/1.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 2.webp" class="layer base" alt="" />
+        <img data-src="images/1.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 3.webp" class="layer base" alt="" />
-        <img src="images/2.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 3.webp" class="layer base" alt="" />
+        <img data-src="images/2.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 4.webp" class="layer base" alt="" />
-        <img src="images/3.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 4.webp" class="layer base" alt="" />
+        <img data-src="images/3.webp" class="layer top" alt="" />
       </div>
     </section>
 
@@ -533,15 +570,15 @@
       <a href="https://drive.google.com/file/d/1Hd12uGSKEb3rxbqVdwTmqdEDrZ-vW-nq/view?usp=drive_link" target="_blank"
         class="qr-plan-rka w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 5.webp" class="layer base" alt="" />
-        <img src="images/4.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 5.webp" class="layer base" alt="" />
+        <img data-src="images/4.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 6.webp" class="layer base" alt="" />
-        <img src="images/5.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 6.webp" class="layer base" alt="" />
+        <img data-src="images/5.webp" class="layer top" alt="" />
       </div>
     </section>
 
@@ -549,15 +586,15 @@
       <a href="https://drive.google.com/file/d/1bycWqeuaZRNzhv_svaCH6LSOCSJHPKHZ/view?usp=drive_link" target="_blank"
         class="qr-jihmorn-m w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 7.webp" class="layer base" alt="" />
-        <img src="images/6.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 7.webp" class="layer base" alt="" />
+        <img data-src="images/6.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 8.webp" class="layer base" alt="" />
-        <img src="images/7.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 8.webp" class="layer base" alt="" />
+        <img data-src="images/7.webp" class="layer top" alt="" />
       </div>
     </section>
 
@@ -565,14 +602,14 @@
       <a href="https://drive.google.com/file/d/1kJvyiRsXq-7AsMASJI4DKrqHwnA929B4/view?usp=drive_link" target="_blank"
         class="qr-dobrovsk-ho w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 9.webp" class="layer base" alt="" />
-        <img src="images/8.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 9.webp" class="layer base" alt="" />
+        <img data-src="images/8.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 10.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 10.webp" class="layer base" alt="" />
       </div>
     </section>
 
@@ -580,45 +617,45 @@
       <a href="https://drive.google.com/file/d/1K_0g-IBqYc9xkl6611moJD8LmUvUZ0_o/view?usp=drive_link" target="_blank"
         class="qr-simulace w-inline-block"></a>
       <div class="overlay-wrap">
-        <img src="images/Artboard 11.webp" class="layer base" alt="" />
-        <img src="images/11.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 11.webp" class="layer base" alt="" />
+        <img data-src="images/11.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 12.webp" class="layer base" alt="" />
-        <img src="images/12.webp" class="layer top" alt="" />
+        <img data-src="images/Artboard 12.webp" class="layer base" alt="" />
+        <img data-src="images/12.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 13.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 13.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 14.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 14.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 15.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 15.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 16.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 16.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img src="images/Artboard 17.webp" class="layer base" alt="" />
+        <img data-src="images/Artboard 17.webp" class="layer base" alt="" />
       </div>
     </section>
 
@@ -675,7 +712,7 @@
         preview.className = 'section-preview';
         preview.dataset.index = index;
         preview.setAttribute('aria-label', `Go to section ${index + 1}`);
-        preview.innerHTML = `<img src="${source.src}" alt="" loading="lazy" decoding="async">`;
+        preview.innerHTML = `<img data-src="${source.src || source.dataset.src || ''}" alt="" loading="lazy" decoding="async">`;
         preview.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         list.appendChild(preview);
       });
