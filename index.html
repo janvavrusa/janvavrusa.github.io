@@ -6,7 +6,7 @@
   <title>portfolio</title>
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="Webflow" name="generator" />
-  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=6" rel="stylesheet" type="text/css" />
+  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=10" rel="stylesheet" type="text/css" />
   <style>
     .loading-marquee-row {
       width: 100vw !important;
@@ -883,6 +883,7 @@
         released = true;
         holdObserver.disconnect();
         wrapper.style.display = 'block';
+        wrapper.style.opacity = '';
 
         const finishRelease = () => {
           if (loadingScreen.classList.contains('is-released')) return;
@@ -896,6 +897,7 @@
 
         requestAnimationFrame(() => {
           wrapper.classList.add('is-revealing');
+          loadingScreen.style.opacity = '';
           loadingScreen.classList.add('is-fading');
           loadingScreen.addEventListener('transitionend', (event) => {
             if (event.propertyName === 'opacity') finishRelease();
