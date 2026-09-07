@@ -209,7 +209,7 @@
         })));
 
         function buildRows() {
-          if (!marquee) return;
+          if (!marquee || loadingCarousel?.classList.contains('is-released')) return;
 
           const viewportHeight = window.innerHeight || 900;
           const targetRows = 6;
@@ -653,7 +653,7 @@
       const previews = [...list.querySelectorAll('.section-preview')];
       const loadingCarousel = document.querySelector('.loading-carousel');
       const activatePreviewImages = () => {
-        if (!loadingCarousel?.classList.contains('is-ready')) return;
+        if (!document.querySelector('.na-tac-obrazovka')?.classList.contains('is-released')) return;
         list.querySelectorAll('img[data-src]').forEach((image) => {
           image.src = image.dataset.src;
           image.removeAttribute('data-src');
@@ -663,7 +663,7 @@
       const carouselObserver = new MutationObserver(activatePreviewImages);
       if (loadingCarousel) carouselObserver.observe(loadingCarousel, { attributes: true, attributeFilter: ['class'] });
       const refreshRail = () => {
-        const loadingVisible = getComputedStyle(loadingScreen).display !== 'none' && Number(getComputedStyle(loadingScreen).opacity) > 0;
+        const loadingVisible = !loadingScreen.classList.contains('is-released');
         rail.classList.toggle('is-visible', !loadingVisible);
         infoPanel?.classList.toggle('is-visible', !loadingVisible);
         toggle?.classList.toggle('is-visible', !loadingVisible);
@@ -883,9 +883,25 @@
         released = true;
         holdObserver.disconnect();
         wrapper.style.display = 'block';
-        wrapper.style.opacity = '1';
-        loadingScreen.style.opacity = '0';
-        loadingScreen.style.display = 'none';
+
+        const finishRelease = () => {
+          if (loadingScreen.classList.contains('is-released')) return;
+          loadingScreen.classList.remove('is-fading');
+          loadingScreen.classList.add('is-released');
+          loadingScreen.style.display = 'none';
+          carousel.classList.add('is-released');
+          carousel.replaceChildren();
+          carousel.setAttribute('aria-busy', 'false');
+        };
+
+        requestAnimationFrame(() => {
+          wrapper.classList.add('is-revealing');
+          loadingScreen.classList.add('is-fading');
+          loadingScreen.addEventListener('transitionend', (event) => {
+            if (event.propertyName === 'opacity') finishRelease();
+          }, { once: true });
+          window.setTimeout(finishRelease, 1000);
+        });
       };
 
       releaseWhenReady();
