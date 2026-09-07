@@ -6,7 +6,7 @@
   <title>portfolio</title>
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="Webflow" name="generator" />
-  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=10" rel="stylesheet" type="text/css" />
+  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=6" rel="stylesheet" type="text/css" />
   <style>
     .loading-marquee-row {
       width: 100vw !important;
@@ -28,28 +28,6 @@
 
 <body class="body">
 
-  <script>
-    (() => {
-      const deferNonCriticalImages = (root = document) => {
-        root.querySelectorAll?.('img[src]').forEach((image) => {
-          if (!image.closest('.loading-carousel, .the-background-video-l-va')) {
-            image.loading = 'lazy';
-            image.decoding = 'async';
-          }
-        });
-      };
-
-      deferNonCriticalImages();
-      new MutationObserver((mutations) => {
-        mutations.forEach(({ addedNodes }) => {
-          addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) deferNonCriticalImages(node);
-          });
-        });
-      }).observe(document.documentElement, { childList: true, subtree: true });
-    })();
-  </script>
-
   <!-- ==========================================================================
        Úvodní ("intro") video, které Webflow interakce (data-w-id) při načtení
        stránky posouvá/odkrývá. Sedí mimo .na-tac-obrazovka záměrně kvůli IX2
@@ -64,7 +42,7 @@
     <video
       id="ddc8c702-f95e-bce7-1b80-5954a9ae3071-video" autoplay="" loop=""
       style="background-image:url(&quot;images/FullHDr15Compressed-poster-00001.jpg&quot;)"
-        muted="" playsinline="" preload="auto" fetchpriority="high" data-wf-ignore="true" data-object-fit="cover">
+      muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover">
       <source src="images/FullHDr15Compressed-transcode.mp4" data-wf-ignore="true" />
     </video>
   </div>
@@ -82,7 +60,7 @@
       <video
         id="bb9feef5-fd67-ec47-5ec6-5d0fb92f9311-video" autoplay="" loop=""
         style="background-image:url(&quot;images/FullHDr15Compressed-poster-00001.jpg&quot;)"
-        muted="" playsinline="" preload="auto" fetchpriority="high" data-wf-ignore="true" data-object-fit="cover">
+        muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover">
         <source src="images/FullHDr15Compressed-transcode.mp4" data-wf-ignore="true" />
       </video>
     </div>
@@ -92,19 +70,17 @@
       <div class="loading-stats-track-stack">
         <div class="loading-stats-track-labels">
           <span class="loading-screen-label">Loading screen <span class="loading-screen-status" aria-hidden="true"></span></span>
+          <span>Whole page</span>
         </div>
         <div class="loading-stats-track loading-stats-track--screen">
           <div class="loading-stats-progress loading-stats-progress--screen"></div>
-        </div>
-        <div class="loading-stats-track-labels">
-          <span class="loading-page-label">whole web <span class="loading-page-status" aria-hidden="true"></span></span>
         </div>
         <div class="loading-stats-track loading-stats-track--page">
           <div class="loading-stats-progress loading-stats-progress--page"></div>
         </div>
       </div>
       <div class="loading-stats-grid">
-        <div><span class="loading-stats-label">Site size</span><strong data-loading-size>274 MB</strong></div>
+        <div><span class="loading-stats-label">Site size</span><strong data-loading-size>calculating</strong></div>
         <div><span class="loading-stats-label">Download speed</span><strong data-loading-speed>calculating</strong></div>
         <div><span class="loading-stats-label">Downloaded</span><strong data-loading-downloaded>0 B</strong></div>
       </div>
@@ -186,20 +162,6 @@
 
         const marquee = document.getElementById('loading-marquee');
         const loadingCarousel = document.querySelector('.loading-carousel');
-        const backgroundVideo = document.querySelector('.na-tac-obrazovka video');
-
-        const waitForBackgroundVideo = () => new Promise((resolve) => {
-          if (!backgroundVideo) {
-            resolve();
-            return;
-          }
-          const finish = () => resolve();
-          backgroundVideo.addEventListener('canplay', finish, { once: true });
-          backgroundVideo.addEventListener('loadeddata', finish, { once: true });
-          if (backgroundVideo.readyState >= 2) finish();
-          backgroundVideo.load();
-          backgroundVideo.play().catch(() => {});
-        });
 
         const preloadImages = () => Promise.all(images.map(({ src }) => new Promise((resolve) => {
           const image = new Image();
@@ -209,7 +171,7 @@
         })));
 
         function buildRows() {
-          if (!marquee || loadingCarousel?.classList.contains('is-released')) return;
+          if (!marquee) return;
 
           const viewportHeight = window.innerHeight || 900;
           const targetRows = 6;
@@ -274,18 +236,9 @@
 
         buildRows();
         window.addEventListener('resize', buildRows);
-        window.loadingBackgroundVideoReady = waitForBackgroundVideo();
-        const activateMainAssets = () => {
-          document.querySelectorAll('.wrapper img[data-src]').forEach((image) => {
-            image.src = image.dataset.src;
-            image.removeAttribute('data-src');
-            image.loading = 'eager';
-          });
-        };
-        Promise.all([window.loadingBackgroundVideoReady, preloadImages()]).then(() => {
+        preloadImages().then(() => {
           loadingCarousel?.classList.add('is-ready');
           loadingCarousel?.setAttribute('aria-busy', 'false');
-          activateMainAssets();
         });
       })();
     </script>
@@ -298,23 +251,23 @@
         const screenProgress = stats.querySelector('.loading-stats-progress--screen');
         const pageProgress = stats.querySelector('.loading-stats-progress--page');
         const screenStatus = stats.querySelector('.loading-screen-status');
-        const pageStatus = stats.querySelector('.loading-page-status');
         const size = stats.querySelector('[data-loading-size]');
         const speed = stats.querySelector('[data-loading-speed]');
         const downloaded = stats.querySelector('[data-loading-downloaded]');
         const startedAt = performance.now();
-        const siteSizeLabel = '274 MB';
-        const wholeWebTargetBytes = 274 * 1024 * 1024;
 
-        const priorityAssetUrls = [...new Set([
-          ...[...document.querySelectorAll('.loading-marquee-item img')].map((el) => el.src),
-          ...[...document.querySelectorAll('.the-background-video-l-va')]
-            .map((el) => new URL(el.dataset.posterUrl, document.baseURI).href)
+        const loadingAssetUrls = [...new Set(
+          [...document.querySelectorAll('.loading-marquee-item img, .the-background-video-l-va video source')]
+            .map(el => el.src || el.href)
             .filter(Boolean)
-        ])];
-        let downloadedBytes = 0;
-        let wholeWebDone = false;
-        const accountedResourceBytes = new Map();
+        )];
+
+        let loadingTotalBytes = 0;
+        let loadingDownloadedBytes = 0;
+        let loadingCompletedAssets = 0;
+        let wholePageTotalBytes = 0;
+        let wholePageDownloadedBytes = 0;
+        let wholePageCompletedAssets = 0;
 
         const formatBytes = (bytes) => {
           if (!Number.isFinite(bytes) || bytes <= 0) return 'calculating';
@@ -323,6 +276,8 @@
           return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
         };
 
+        const PAGE_TARGET_SIZE_BYTES = 168432848;
+
         const setProgress = (bar, value) => {
           if (!bar) return;
           bar.style.width = `${Math.min(Math.max(value, 0), 100)}%`;
@@ -330,49 +285,66 @@
 
         const updateStats = () => {
           const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
-          const loadedPriorityAssets = priorityAssetUrls.filter((url) => accountedResourceBytes.has(url)).length;
-          const screenRatio = priorityAssetUrls.length ? loadedPriorityAssets / priorityAssetUrls.length : 0;
-          const wholeWebRatio = Math.min(downloadedBytes / wholeWebTargetBytes, 1);
+          const loadingRatio = loadingAssetUrls.length ? loadingCompletedAssets / loadingAssetUrls.length : 0;
 
-          if (screenRatio >= 1 && screenStatus) {
+          if (loadingRatio >= 1 && screenStatus) {
             screenStatus.textContent = '✓';
             screenStatus.classList.add('is-visible');
             screenStatus.setAttribute('aria-hidden', 'false');
           }
 
-          if (wholeWebRatio >= 1 && pageStatus) {
-            pageStatus.textContent = '✓';
-            pageStatus.classList.add('is-visible');
-            pageStatus.setAttribute('aria-hidden', 'false');
-            wholeWebDone = true;
-          }
+          const pageSizeBytes = PAGE_TARGET_SIZE_BYTES;
+          const pageDownloadedBytes = wholePageDownloadedBytes > 0
+            ? Math.min(wholePageDownloadedBytes, pageSizeBytes)
+            : Math.min(loadingDownloadedBytes || 0, pageSizeBytes);
+          const pageRatio = pageSizeBytes ? pageDownloadedBytes / pageSizeBytes : 0;
 
-          setProgress(screenProgress, screenRatio * 100);
-          setProgress(pageProgress, wholeWebRatio * 100);
-          downloaded.textContent = formatBytes(downloadedBytes);
-          size.textContent = siteSizeLabel;
-          speed.textContent = downloadedBytes ? `${formatBytes(downloadedBytes / elapsedSeconds)}/s` : 'calculating';
+          setProgress(screenProgress, loadingRatio * 100);
+          setProgress(pageProgress, pageRatio * 100);
+
+          downloaded.textContent = formatBytes(pageDownloadedBytes);
+          size.textContent = formatBytes(pageSizeBytes);
+          speed.textContent = pageDownloadedBytes ? `${formatBytes(pageDownloadedBytes / elapsedSeconds)}/s` : 'calculating';
         };
 
-        const syncNativeResourceBytes = () => {
-          performance.getEntriesByType('resource').forEach((entry) => {
-            const url = entry.name;
-            if (accountedResourceBytes.has(url)) return;
-            const bytes = Number(entry.transferSize || 0);
-            if (bytes > 0) {
-              downloadedBytes += bytes;
-              accountedResourceBytes.set(url, bytes);
-            }
-          });
+        loadingAssetUrls.forEach((url) => {
+          fetch(url, { cache: 'force-cache' })
+            .then(response => response.blob())
+            .then(blob => {
+              loadingTotalBytes += blob.size;
+              loadingDownloadedBytes += blob.size;
+              loadingCompletedAssets += 1;
+              updateStats();
+            })
+            .catch(() => {
+              loadingCompletedAssets += 1;
+              updateStats();
+            });
+        });
+
+        const refreshPageMetrics = () => {
+          const entries = typeof performance.getEntriesByType === 'function'
+            ? performance.getEntriesByType('resource').filter((entry) => {
+                const name = entry.name || '';
+                return name && (name.startsWith(window.location.origin) || name.startsWith('file://'));
+              })
+            : [];
+
+          if (!entries.length) {
+            wholePageCompletedAssets = Math.max(wholePageCompletedAssets, 1);
+            updateStats();
+            return;
+          }
+
+          wholePageTotalBytes = entries.reduce((sum, entry) => sum + (Number(entry.transferSize || entry.encodedBodySize || 0) || 0), 0);
+          wholePageDownloadedBytes = entries.reduce((sum, entry) => sum + ((entry.responseEnd > 0 || entry.transferSize > 0 || entry.encodedBodySize > 0) ? (Number(entry.transferSize || entry.encodedBodySize || 0) || 0) : 0), 0);
+          wholePageCompletedAssets = entries.filter((entry) => entry.responseEnd > 0 || entry.transferSize > 0 || entry.encodedBodySize > 0).length;
           updateStats();
         };
 
         updateStats();
-        syncNativeResourceBytes();
-        window.setInterval(() => {
-          syncNativeResourceBytes();
-          if (!wholeWebDone) updateStats();
-        }, 500);
+        window.addEventListener('load', refreshPageMetrics);
+        window.setInterval(refreshPageMetrics, 500);
       })();
     </script>
 
@@ -457,12 +429,12 @@
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 1.webp" class="layer base" alt="" />
+        <img src="images/Artboard 1.webp" class="layer base" alt="" />
         <img style="-webkit-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
                     -moz-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
                     -ms-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);
                     transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0)"
-            height="Auto" alt="" data-src="images/mini_logo_animace.webp" loading="lazy" data-w-id="4e93d58e-73c2-1a0c-4d96-5f18e5192429" class="logo" />
+            height="Auto" alt="" src="images/mini_logo_animace.webp" loading="lazy" data-w-id="4e93d58e-73c2-1a0c-4d96-5f18e5192429" class="logo" />
       </div>
     </section>
 
@@ -472,7 +444,7 @@
       <a href="images/animace bakalarka.mp4" target="_blank" rel="noopener" class="qr-bakalarka-video w-inline-block"
         aria-label="Open bachelor's thesis animation"></a>
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 18.webp" class="layer base" alt="" />
+        <img src="images/Artboard 18.webp" class="layer base" alt="" />
         <video class="bakalarka-video" data-video-src="images/animace bakalarka 8x small.mp4" loop muted playsinline preload="none"
           aria-label="Bachelor's thesis animation"></video>
       </div>
@@ -480,22 +452,22 @@
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 2.webp" class="layer base" alt="" />
-        <img data-src="images/1.webp" class="layer top" alt="" />
+        <img src="images/Artboard 2.webp" class="layer base" alt="" />
+        <img src="images/1.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 3.webp" class="layer base" alt="" />
-        <img data-src="images/2.webp" class="layer top" alt="" />
+        <img src="images/Artboard 3.webp" class="layer base" alt="" />
+        <img src="images/2.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 4.webp" class="layer base" alt="" />
-        <img data-src="images/3.webp" class="layer top" alt="" />
+        <img src="images/Artboard 4.webp" class="layer base" alt="" />
+        <img src="images/3.webp" class="layer top" alt="" />
       </div>
     </section>
 
@@ -503,15 +475,15 @@
       <a href="https://drive.google.com/file/d/1Hd12uGSKEb3rxbqVdwTmqdEDrZ-vW-nq/view?usp=drive_link" target="_blank"
         class="qr-plan-rka w-inline-block"></a>
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 5.webp" class="layer base" alt="" />
-        <img data-src="images/4.webp" class="layer top" alt="" />
+        <img src="images/Artboard 5.webp" class="layer base" alt="" />
+        <img src="images/4.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 6.webp" class="layer base" alt="" />
-        <img data-src="images/5.webp" class="layer top" alt="" />
+        <img src="images/Artboard 6.webp" class="layer base" alt="" />
+        <img src="images/5.webp" class="layer top" alt="" />
       </div>
     </section>
 
@@ -519,15 +491,15 @@
       <a href="https://drive.google.com/file/d/1bycWqeuaZRNzhv_svaCH6LSOCSJHPKHZ/view?usp=drive_link" target="_blank"
         class="qr-jihmorn-m w-inline-block"></a>
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 7.webp" class="layer base" alt="" />
-        <img data-src="images/6.webp" class="layer top" alt="" />
+        <img src="images/Artboard 7.webp" class="layer base" alt="" />
+        <img src="images/6.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 8.webp" class="layer base" alt="" />
-        <img data-src="images/7.webp" class="layer top" alt="" />
+        <img src="images/Artboard 8.webp" class="layer base" alt="" />
+        <img src="images/7.webp" class="layer top" alt="" />
       </div>
     </section>
 
@@ -535,14 +507,14 @@
       <a href="https://drive.google.com/file/d/1kJvyiRsXq-7AsMASJI4DKrqHwnA929B4/view?usp=drive_link" target="_blank"
         class="qr-dobrovsk-ho w-inline-block"></a>
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 9.webp" class="layer base" alt="" />
-        <img data-src="images/8.webp" class="layer top" alt="" />
+        <img src="images/Artboard 9.webp" class="layer base" alt="" />
+        <img src="images/8.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 10.webp" class="layer base" alt="" />
+        <img src="images/Artboard 10.webp" class="layer base" alt="" />
       </div>
     </section>
 
@@ -550,45 +522,45 @@
       <a href="https://drive.google.com/file/d/1K_0g-IBqYc9xkl6611moJD8LmUvUZ0_o/view?usp=drive_link" target="_blank"
         class="qr-simulace w-inline-block"></a>
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 11.webp" class="layer base" alt="" />
-        <img data-src="images/11.webp" class="layer top" alt="" />
+        <img src="images/Artboard 11.webp" class="layer base" alt="" />
+        <img src="images/11.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 12.webp" class="layer base" alt="" />
-        <img data-src="images/12.webp" class="layer top" alt="" />
+        <img src="images/Artboard 12.webp" class="layer base" alt="" />
+        <img src="images/12.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 13.webp" class="layer base" alt="" />
+        <img src="images/Artboard 13.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 14.webp" class="layer base" alt="" />
+        <img src="images/Artboard 14.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 15.webp" class="layer base" alt="" />
+        <img src="images/Artboard 15.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 16.webp" class="layer base" alt="" />
+        <img src="images/Artboard 16.webp" class="layer base" alt="" />
       </div>
     </section>
 
     <section class="tverec">
       <div class="overlay-wrap">
-        <img data-src="images/Artboard 17.webp" class="layer base" alt="" />
+        <img src="images/Artboard 17.webp" class="layer base" alt="" />
       </div>
     </section>
 
@@ -645,25 +617,14 @@
         preview.className = 'section-preview';
         preview.dataset.index = index;
         preview.setAttribute('aria-label', `Go to section ${index + 1}`);
-        preview.innerHTML = `<img data-src="${source.src || source.dataset.src || ''}" alt="" loading="lazy" decoding="async">`;
+        preview.innerHTML = `<img src="${source.src}" alt="" loading="lazy" decoding="async">`;
         preview.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         list.appendChild(preview);
       });
 
       const previews = [...list.querySelectorAll('.section-preview')];
-      const loadingCarousel = document.querySelector('.loading-carousel');
-      const activatePreviewImages = () => {
-        if (!document.querySelector('.na-tac-obrazovka')?.classList.contains('is-released')) return;
-        list.querySelectorAll('img[data-src]').forEach((image) => {
-          image.src = image.dataset.src;
-          image.removeAttribute('data-src');
-        });
-      };
-      activatePreviewImages();
-      const carouselObserver = new MutationObserver(activatePreviewImages);
-      if (loadingCarousel) carouselObserver.observe(loadingCarousel, { attributes: true, attributeFilter: ['class'] });
       const refreshRail = () => {
-        const loadingVisible = !loadingScreen.classList.contains('is-released');
+        const loadingVisible = getComputedStyle(loadingScreen).display !== 'none' && Number(getComputedStyle(loadingScreen).opacity) > 0;
         rail.classList.toggle('is-visible', !loadingVisible);
         infoPanel?.classList.toggle('is-visible', !loadingVisible);
         toggle?.classList.toggle('is-visible', !loadingVisible);
@@ -843,70 +804,142 @@
   <script src="js/webflow-script.js" type="text/javascript"></script>
   <script>
     (() => {
-      const loadingScreen = document.querySelector('.na-tac-obrazovka');
+      const endpoint = 'https://ifwtfjigccyzrieozpjw.supabase.co/functions/v1/collect-analytics';
+      const publishableKey = 'sb_publishable_rwG-CzGsuPma6R8gimXFyQ_m1RiYpeu';
       const wrapper = document.querySelector('.wrapper');
-      const carousel = document.querySelector('.loading-carousel');
-      if (!loadingScreen || !wrapper || !carousel) return;
+      if (!wrapper) return;
 
-      let released = false;
-      const holdLoadingScreen = () => {
-        if (released) return;
-        loadingScreen.style.display = 'block';
-        loadingScreen.style.opacity = '1';
-        wrapper.style.display = 'none';
-        wrapper.style.opacity = '0';
+      const getId = (storage, key) => {
+        let value = storage.getItem(key);
+        if (!value) {
+          value = crypto.randomUUID();
+          storage.setItem(key, value);
+        }
+        return value;
       };
 
-      holdLoadingScreen();
-      const holdObserver = new MutationObserver(holdLoadingScreen);
-      holdObserver.observe(loadingScreen, { attributes: true, attributeFilter: ['style', 'class'] });
-      holdObserver.observe(wrapper, { attributes: true, attributeFilter: ['style', 'class'] });
+      const visitorId = getId(localStorage, 'portfolio_visitor_id');
+      const sessionId = getId(sessionStorage, 'portfolio_session_id');
+      const sessionStartedAt = new Date().toISOString();
+      const sessionStartedMs = performance.now();
+      const sections = [...wrapper.querySelectorAll('.tverec')];
+      const state = sections.map((section, index) => ({
+        index,
+        key: section.dataset.sectionKey || `section-${index + 1}`,
+        enteredAt: null,
+        viewSent: false,
+        visitNumber: 0,
+        wasViewed: false
+      }));
 
-      const waitForImage = (image) => {
-        if (!image.src && image.dataset.src) {
-          image.src = image.dataset.src;
-          image.loading = 'eager';
+      const latency = async () => {
+        const samples = [];
+        for (let index = 0; index < 3; index += 1) {
+          const started = performance.now();
+          try {
+            await fetch(`${endpoint}?ping=${Date.now()}-${index}`, { method: 'HEAD', cache: 'no-store' });
+            samples.push(performance.now() - started);
+          } catch {}
         }
-        if (image.complete) return image.decode?.().catch(() => {}) || Promise.resolve();
-        return new Promise((resolve) => {
-          image.addEventListener('load', resolve, { once: true });
-          image.addEventListener('error', resolve, { once: true });
-        });
-      };
-
-      const releaseWhenReady = async () => {
-        while (!carousel.classList.contains('is-ready')) {
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-        }
-        const sectionImages = [...wrapper.querySelectorAll('img[data-src], img[src]')];
-        await Promise.all(sectionImages.map(waitForImage));
-        released = true;
-        holdObserver.disconnect();
-        wrapper.style.display = 'block';
-        wrapper.style.opacity = '';
-
-        const finishRelease = () => {
-          if (loadingScreen.classList.contains('is-released')) return;
-          loadingScreen.classList.remove('is-fading');
-          loadingScreen.classList.add('is-released');
-          loadingScreen.style.display = 'none';
-          carousel.classList.add('is-released');
-          carousel.replaceChildren();
-          carousel.setAttribute('aria-busy', 'false');
+        if (!samples.length) return {};
+        return {
+          latency_avg_ms: Math.round(samples.reduce((sum, value) => sum + value, 0) / samples.length),
+          latency_jitter_ms: Math.round(Math.max(...samples) - Math.min(...samples))
         };
+      };
 
-        requestAnimationFrame(() => {
-          wrapper.classList.add('is-revealing');
-          loadingScreen.style.opacity = '';
-          loadingScreen.classList.add('is-fading');
-          loadingScreen.addEventListener('transitionend', (event) => {
-            if (event.propertyName === 'opacity') finishRelease();
-          }, { once: true });
-          window.setTimeout(finishRelease, 1000);
+      const send = async (eventName, data = {}) => {
+        const payload = {
+          event_name: eventName,
+          session_id: sessionId,
+          visitor_id: visitorId,
+          ...data
+        };
+        try {
+          await fetch(endpoint, {
+            method: 'POST',
+            keepalive: true,
+            headers: {
+              apikey: publishableKey,
+              Authorization: `Bearer ${publishableKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+        } catch {}
+      };
+
+      const finishSection = (item) => {
+        if (item.enteredAt === null) return;
+        const visibleMs = Math.round(performance.now() - item.enteredAt);
+        const wasViewed = item.viewSent;
+        item.enteredAt = null;
+        if (wasViewed) {
+          send('section_leave', {
+            section_key: item.key,
+            section_index: item.index,
+            visible_ms: visibleMs,
+            visit_number: item.visitNumber,
+            left_at: new Date().toISOString(),
+            navigation_method: 'scroll'
+          });
+        }
+        item.viewSent = false;
+      };
+
+      const markVisible = (item) => {
+        if (item.enteredAt === null) {
+          item.enteredAt = performance.now();
+          item.visitNumber += 1;
+          item.viewSent = false;
+        }
+        if (!item.viewSent && performance.now() - item.enteredAt >= 600) {
+          item.viewSent = true;
+          item.wasViewed = true;
+          send('section_view', {
+            section_key: item.key,
+            section_index: item.index,
+            visible_ms: Math.round(performance.now() - item.enteredAt),
+            visit_number: item.visitNumber,
+            entered_at: new Date().toISOString(),
+            navigation_method: 'scroll'
+          });
+        }
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(({ target, isIntersecting, intersectionRatio }) => {
+          const item = state[sections.indexOf(target)];
+          if (!item) return;
+          if (isIntersecting && intersectionRatio >= 0.5) markVisible(item);
+          else finishSection(item);
+        });
+      }, { threshold: [0, 0.5] });
+
+      sections.forEach(section => observer.observe(section));
+      const viewTimer = window.setInterval(() => state.forEach(item => {
+        if (item.enteredAt !== null) markVisible(item);
+      }), 500);
+      const sendSessionEnd = () => {
+        window.clearInterval(viewTimer);
+        state.forEach(finishSection);
+        const durationMs = Math.round(performance.now() - sessionStartedMs);
+        send('session_end', {
+          started_at: sessionStartedAt,
+          ended_at: new Date().toISOString(),
+          duration_ms: durationMs,
+          max_section_reached: Math.max(-1, ...state.filter(item => item.wasViewed).map(item => item.index))
         });
       };
 
-      releaseWhenReady();
+      latency().then(measured => send('session_start', {
+        started_at: sessionStartedAt,
+        ...measured
+      }));
+      window.addEventListener('pagehide', sendSessionEnd, { once: true });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') sendSessionEnd();
+      });
     })();
   </script>
 </body>
