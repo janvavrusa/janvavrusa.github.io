@@ -299,22 +299,15 @@
         const siteSizeLabel = '274 MB';
         const wholeWebTargetBytes = 274 * 1024 * 1024;
 
-        const absoluteUrl = (url) => new URL(url, document.baseURI).href;
         const priorityAssetUrls = [...new Set([
           ...[...document.querySelectorAll('.loading-marquee-item img')].map((el) => el.src),
           ...[...document.querySelectorAll('.the-background-video-l-va')]
-            .map((el) => el.dataset.posterUrl)
+            .map((el) => new URL(el.dataset.posterUrl, document.baseURI).href)
             .filter(Boolean)
-        ].map(absoluteUrl))];
-        let wholeWebAssetUrls = [];
-
-        let priorityCompleted = 0;
+        ])];
         let downloadedBytes = 0;
-        let wholeWebStarted = false;
         let wholeWebDone = false;
-        let wholeWebSettled = 0;
         const accountedResourceBytes = new Map();
-        let nativeVideoUrls = [];
 
         const formatBytes = (bytes) => {
           if (!Number.isFinite(bytes) || bytes <= 0) return 'calculating';
@@ -330,14 +323,9 @@
 
         const updateStats = () => {
           const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
-          const screenRatio = priorityAssetUrls.length ? priorityCompleted / priorityAssetUrls.length : 1;
-          const fetchAssetCount = wholeWebAssetUrls.filter((url) => !nativeVideoUrls.includes(url)).length;
-          const allFetchAssetsSettled = fetchAssetCount > 0 && wholeWebSettled >= fetchAssetCount;
-          const wholeWebRatio = allFetchAssetsSettled
-            ? 1
-            : wholeWebTargetBytes
-              ? Math.min(downloadedBytes / wholeWebTargetBytes, 1)
-              : 0;
+          const loadedPriorityAssets = priorityAssetUrls.filter((url) => accountedResourceBytes.has(url)).length;
+          const screenRatio = priorityAssetUrls.length ? loadedPriorityAssets / priorityAssetUrls.length : 0;
+          const wholeWebRatio = Math.min(downloadedBytes / wholeWebTargetBytes, 1);
 
           if (screenRatio >= 1 && screenStatus) {
             screenStatus.textContent = '✓';
@@ -345,7 +333,7 @@
             screenStatus.setAttribute('aria-hidden', 'false');
           }
 
-          if (allFetchAssetsSettled && wholeWebRatio >= 1 && pageStatus) {
+          if (wholeWebRatio >= 1 && pageStatus) {
             pageStatus.textContent = '✓';
             pageStatus.classList.add('is-visible');
             pageStatus.setAttribute('aria-hidden', 'false');
@@ -359,61 +347,11 @@
           speed.textContent = downloadedBytes ? `${formatBytes(downloadedBytes / elapsedSeconds)}/s` : 'calculating';
         };
 
-        const downloadAsset = async (url) => {
-          try {
-            const response = await fetch(url, { cache: 'force-cache' });
-            const contentLength = Number(response.headers.get('content-length')) || 0;
-            if (!response.body) {
-              await response.blob();
-              downloadedBytes += contentLength || 0;
-              return;
-            }
-            const reader = response.body.getReader();
-            let assetBytes = 0;
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              assetBytes += value.byteLength;
-              downloadedBytes += value.byteLength;
-              updateStats();
-            }
-          } catch (error) {
-            // Failed optional assets still count as processed so the loader cannot hang.
-          }
-        };
-
-        const loadAssets = async (urls, onComplete) => {
-          for (const url of urls) {
-            await downloadAsset(url);
-            onComplete();
-            updateStats();
-          }
-        };
-
-        const collectWholeWebAssets = () => {
-          wholeWebAssetUrls = [...new Set([
-            ...[...document.querySelectorAll('img[src], video[src], video source[src], link[href], script[src]')]
-              .map((el) => el.currentSrc || el.src || el.href)
-              .filter(Boolean)
-              .map(absoluteUrl)
-              .filter((url) => url.startsWith(window.location.origin) || url.startsWith('file:')),
-            ...[...document.querySelectorAll('video[data-video-src]')].map((el) => el.dataset.videoSrc)
-          ].map(absoluteUrl))];
-          nativeVideoUrls = [...new Set([
-            ...[...document.querySelectorAll('video source[src]')].map((el) => el.src),
-            ...[...document.querySelectorAll('video[data-video-src]')].map((el) => el.dataset.videoSrc)
-          ].map(absoluteUrl))];
-        };
-
-        const waitForDomReady = () => document.readyState === 'loading'
-          ? new Promise((resolve) => document.addEventListener('DOMContentLoaded', resolve, { once: true }))
-          : Promise.resolve();
-
         const syncNativeResourceBytes = () => {
           performance.getEntriesByType('resource').forEach((entry) => {
             const url = entry.name;
-            if (!nativeVideoUrls.includes(url) || accountedResourceBytes.has(url)) return;
-            const bytes = Number(entry.transferSize || entry.encodedBodySize || 0);
+            if (accountedResourceBytes.has(url)) return;
+            const bytes = Number(entry.transferSize || 0);
             if (bytes > 0) {
               downloadedBytes += bytes;
               accountedResourceBytes.set(url, bytes);
@@ -422,27 +360,12 @@
           updateStats();
         };
 
-        const startWholeWeb = async () => {
-          if (wholeWebStarted) return;
-          wholeWebStarted = true;
-          await waitForDomReady();
-          collectWholeWebAssets();
-          syncNativeResourceBytes();
-          const remainingUrls = wholeWebAssetUrls.filter((url) => !priorityAssetUrls.includes(url) && !nativeVideoUrls.includes(url));
-          await loadAssets(remainingUrls, () => { wholeWebSettled += 1; });
-          syncNativeResourceBytes();
-          updateStats();
-        };
-
         updateStats();
-        loadAssets(priorityAssetUrls, () => {
-          priorityCompleted += 1;
-          wholeWebSettled += 1;
-        }).then(startWholeWeb);
+        syncNativeResourceBytes();
         window.setInterval(() => {
-          if (wholeWebStarted) syncNativeResourceBytes();
+          syncNativeResourceBytes();
           if (!wholeWebDone) updateStats();
-        }, 250);
+        }, 500);
       })();
     </script>
 
