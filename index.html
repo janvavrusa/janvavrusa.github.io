@@ -645,12 +645,23 @@
         preview.className = 'section-preview';
         preview.dataset.index = index;
         preview.setAttribute('aria-label', `Go to section ${index + 1}`);
-        preview.innerHTML = `<img src="${source.src || source.dataset.src || ''}" alt="" loading="lazy" decoding="async">`;
+        preview.innerHTML = `<img data-src="${source.src || source.dataset.src || ''}" alt="" loading="lazy" decoding="async">`;
         preview.addEventListener('click', () => section.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         list.appendChild(preview);
       });
 
       const previews = [...list.querySelectorAll('.section-preview')];
+      const loadingCarousel = document.querySelector('.loading-carousel');
+      const activatePreviewImages = () => {
+        if (!loadingCarousel?.classList.contains('is-ready')) return;
+        list.querySelectorAll('img[data-src]').forEach((image) => {
+          image.src = image.dataset.src;
+          image.removeAttribute('data-src');
+        });
+      };
+      activatePreviewImages();
+      const carouselObserver = new MutationObserver(activatePreviewImages);
+      if (loadingCarousel) carouselObserver.observe(loadingCarousel, { attributes: true, attributeFilter: ['class'] });
       const refreshRail = () => {
         const loadingVisible = getComputedStyle(loadingScreen).display !== 'none' && Number(getComputedStyle(loadingScreen).opacity) > 0;
         rail.classList.toggle('is-visible', !loadingVisible);
