@@ -144,6 +144,12 @@ a:hover {
   z-index: 4;
   display: flex;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+.loading-carousel.is-ready {
+  opacity: 1;
 }
 
 .loading-stats {
@@ -181,6 +187,25 @@ a:hover {
   letter-spacing: .08em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, .72);
+}
+
+.loading-screen-status {
+  display: inline-block;
+  width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  color: #57d68d;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity .2s ease, width .2s ease, margin-left .2s ease;
+}
+
+.loading-screen-status.is-visible {
+  width: auto;
+  margin-left: 4px;
+  opacity: 1;
 }
 
 .loading-stats-track {
@@ -804,7 +829,7 @@ a:hover {
   margin-top: -16%;
   display: block;
   position: relative;
-  bottom: -76.5%;
+  bottom: -77.0%;
   left: 43%;
   z-index: 10;
 }

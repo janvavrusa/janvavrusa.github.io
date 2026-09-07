@@ -69,7 +69,7 @@
       <div class="loading-stats-heading">Loading site</div>
       <div class="loading-stats-track-stack">
         <div class="loading-stats-track-labels">
-          <span>Loading screen</span>
+          <span class="loading-screen-label">Loading screen <span class="loading-screen-status" aria-hidden="true"></span></span>
           <span>Whole page</span>
         </div>
         <div class="loading-stats-track loading-stats-track--screen">
@@ -136,7 +136,7 @@
     <!-- Aktivní běžící text při načítání stránky -->
 
 
-    <div class="carousel loading-carousel" aria-label="Loading content marquee">
+    <div class="carousel loading-carousel" aria-label="Loading content marquee" aria-busy="true">
       <div id="loading-marquee" class="loading-marquee"></div>
     </div>
 
@@ -161,6 +161,14 @@
         ];
 
         const marquee = document.getElementById('loading-marquee');
+        const loadingCarousel = document.querySelector('.loading-carousel');
+
+        const preloadImages = () => Promise.all(images.map(({ src }) => new Promise((resolve) => {
+          const image = new Image();
+          image.onload = () => Promise.resolve(image.decode?.()).catch(() => {}).then(resolve);
+          image.onerror = resolve;
+          image.src = src;
+        })));
 
         function buildRows() {
           if (!marquee) return;
@@ -206,7 +214,7 @@
                 const img = document.createElement('img');
                 img.src = src;
                 img.alt = '';
-                img.loading = 'lazy';
+                img.loading = 'eager';
                 img.style.objectFit = 'contain';
                 img.style.display = 'block';
                 img.style.filter = 'none';
@@ -228,6 +236,10 @@
 
         buildRows();
         window.addEventListener('resize', buildRows);
+        preloadImages().then(() => {
+          loadingCarousel?.classList.add('is-ready');
+          loadingCarousel?.setAttribute('aria-busy', 'false');
+        });
       })();
     </script>
 
@@ -238,6 +250,7 @@
 
         const screenProgress = stats.querySelector('.loading-stats-progress--screen');
         const pageProgress = stats.querySelector('.loading-stats-progress--page');
+        const screenStatus = stats.querySelector('.loading-screen-status');
         const size = stats.querySelector('[data-loading-size]');
         const speed = stats.querySelector('[data-loading-speed]');
         const downloaded = stats.querySelector('[data-loading-downloaded]');
@@ -263,7 +276,7 @@
           return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
         };
 
-        const PAGE_TARGET_SIZE_BYTES = 241 * 1024 * 1024;
+        const PAGE_TARGET_SIZE_BYTES = 168432848;
 
         const setProgress = (bar, value) => {
           if (!bar) return;
@@ -274,7 +287,13 @@
           const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
           const loadingRatio = loadingAssetUrls.length ? loadingCompletedAssets / loadingAssetUrls.length : 0;
 
-          const pageSizeBytes = wholePageTotalBytes > 0 ? Math.min(wholePageTotalBytes, PAGE_TARGET_SIZE_BYTES) : PAGE_TARGET_SIZE_BYTES;
+          if (loadingRatio >= 1 && screenStatus) {
+            screenStatus.textContent = '✓';
+            screenStatus.classList.add('is-visible');
+            screenStatus.setAttribute('aria-hidden', 'false');
+          }
+
+          const pageSizeBytes = PAGE_TARGET_SIZE_BYTES;
           const pageDownloadedBytes = wholePageDownloadedBytes > 0
             ? Math.min(wholePageDownloadedBytes, pageSizeBytes)
             : Math.min(loadingDownloadedBytes || 0, pageSizeBytes);
@@ -504,14 +523,14 @@
         class="qr-simulace w-inline-block"></a>
       <div class="overlay-wrap">
         <img src="images/Artboard 11.webp" class="layer base" alt="" />
+        <img src="images/11.webp" class="layer top" alt="" />
       </div>
     </section>
 
     <section class="tverec">
-      <a href="https://drive.google.com/file/d/17PMnK_rycCPal-lWCiuRFlHcWOWf1-GX/view?usp=drive_link" target="_blank"
-        class="qr-simulace w-inline-block"></a>
       <div class="overlay-wrap">
         <img src="images/Artboard 12.webp" class="layer base" alt="" />
+        <img src="images/12.webp" class="layer top" alt="" />
       </div>
     </section>
 
