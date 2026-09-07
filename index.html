@@ -841,6 +841,56 @@
   <script src="js/jquery.js?site=69570ca7f9ee48a5ae6cb6f5" type="text/javascript"></script>
   <script src="js/webflow.schunk.36b8fb49256177c8.js" type="text/javascript"></script>
   <script src="js/webflow-script.js" type="text/javascript"></script>
+  <script>
+    (() => {
+      const loadingScreen = document.querySelector('.na-tac-obrazovka');
+      const wrapper = document.querySelector('.wrapper');
+      const carousel = document.querySelector('.loading-carousel');
+      if (!loadingScreen || !wrapper || !carousel) return;
+
+      let released = false;
+      const holdLoadingScreen = () => {
+        if (released) return;
+        loadingScreen.style.display = 'block';
+        loadingScreen.style.opacity = '1';
+        wrapper.style.display = 'none';
+        wrapper.style.opacity = '0';
+      };
+
+      holdLoadingScreen();
+      const holdObserver = new MutationObserver(holdLoadingScreen);
+      holdObserver.observe(loadingScreen, { attributes: true, attributeFilter: ['style', 'class'] });
+      holdObserver.observe(wrapper, { attributes: true, attributeFilter: ['style', 'class'] });
+
+      const waitForImage = (image) => {
+        if (!image.src && image.dataset.src) {
+          image.src = image.dataset.src;
+          image.loading = 'eager';
+        }
+        if (image.complete) return image.decode?.().catch(() => {}) || Promise.resolve();
+        return new Promise((resolve) => {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', resolve, { once: true });
+        });
+      };
+
+      const releaseWhenReady = async () => {
+        while (!carousel.classList.contains('is-ready')) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+        const sectionImages = [...wrapper.querySelectorAll('img[data-src], img[src]')];
+        await Promise.all(sectionImages.map(waitForImage));
+        released = true;
+        holdObserver.disconnect();
+        wrapper.style.display = 'block';
+        wrapper.style.opacity = '1';
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.display = 'none';
+      };
+
+      releaseWhenReady();
+    })();
+  </script>
 </body>
 
 </html>
