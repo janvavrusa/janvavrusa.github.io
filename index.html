@@ -281,6 +281,7 @@
         const downloaded = stats.querySelector('[data-loading-downloaded]');
         const startedAt = performance.now();
         const siteSizeLabel = '274 MB';
+        let wholeWebTargetBytes = 0;
 
         const absoluteUrl = (url) => new URL(url, document.baseURI).href;
         const priorityAssetUrls = [...new Set([
@@ -291,16 +292,17 @@
         const wholeWebAssetUrls = [...new Set([
           ...[...document.querySelectorAll('img[src], video[src], video source[src], link[href], script[src]')]
             .map((el) => el.currentSrc || el.src || el.href)
-            .filter(Boolean),
+            .filter(Boolean)
+            .map(absoluteUrl)
+            .filter((url) => url.startsWith(window.location.origin) || url.startsWith('file:')),
           ...[...document.querySelectorAll('video[data-video-src]')].map((el) => el.dataset.videoSrc)
         ].map(absoluteUrl))];
 
         let priorityCompleted = 0;
-        let wholeWebCompleted = 0;
         let downloadedBytes = 0;
-        let totalBytes = 0;
         let wholeWebStarted = false;
         let wholeWebDone = false;
+        let wholeWebSettled = 0;
 
         const formatBytes = (bytes) => {
           if (!Number.isFinite(bytes) || bytes <= 0) return 'calculating';
@@ -317,7 +319,9 @@
         const updateStats = () => {
           const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
           const screenRatio = priorityAssetUrls.length ? priorityCompleted / priorityAssetUrls.length : 1;
-          const wholeWebRatio = wholeWebAssetUrls.length ? wholeWebCompleted / wholeWebAssetUrls.length : 1;
+          const wholeWebRatio = wholeWebTargetBytes
+            ? Math.min(downloadedBytes / wholeWebTargetBytes, 1)
+            : 0;
 
           if (screenRatio >= 1 && screenStatus) {
             screenStatus.textContent = '✓';
@@ -325,7 +329,7 @@
             screenStatus.setAttribute('aria-hidden', 'false');
           }
 
-          if (wholeWebRatio >= 1 && pageStatus) {
+          if (wholeWebSettled >= wholeWebAssetUrls.length && wholeWebRatio >= 1 && pageStatus) {
             pageStatus.textContent = '✓';
             pageStatus.classList.add('is-visible');
             pageStatus.setAttribute('aria-hidden', 'false');
@@ -343,10 +347,9 @@
           try {
             const response = await fetch(url, { cache: 'force-cache' });
             const contentLength = Number(response.headers.get('content-length')) || 0;
-            totalBytes += contentLength;
             if (!response.body) {
               await response.blob();
-              downloadedBytes += contentLength;
+              downloadedBytes += contentLength || 0;
               return;
             }
             const reader = response.body.getReader();
@@ -358,32 +361,45 @@
               downloadedBytes += value.byteLength;
               updateStats();
             }
-            if (!contentLength) totalBytes += assetBytes;
           } catch (error) {
             // Failed optional assets still count as processed so the loader cannot hang.
           }
         };
 
         const loadAssets = async (urls, onComplete) => {
-          await Promise.all(urls.map(async (url) => {
+          for (const url of urls) {
             await downloadAsset(url);
             onComplete();
             updateStats();
+          }
+        };
+
+        const measureAssetSizes = async () => {
+          const sizes = await Promise.all(wholeWebAssetUrls.map(async (url) => {
+            try {
+              const response = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
+              return Number(response.headers.get('content-length')) || 0;
+            } catch (error) {
+              return 0;
+            }
           }));
+          wholeWebTargetBytes = sizes.reduce((sum, assetSize) => sum + assetSize, 0);
+          updateStats();
         };
 
         const startWholeWeb = async () => {
           if (wholeWebStarted) return;
           wholeWebStarted = true;
           const remainingUrls = wholeWebAssetUrls.filter((url) => !priorityAssetUrls.includes(url));
-          await loadAssets(remainingUrls, () => { wholeWebCompleted += 1; });
-          wholeWebCompleted = wholeWebAssetUrls.length;
+          await loadAssets(remainingUrls, () => { wholeWebSettled += 1; });
           updateStats();
         };
 
         updateStats();
-        loadAssets(priorityAssetUrls, () => { priorityCompleted += 1; })
-          .then(startWholeWeb);
+        measureAssetSizes().then(() => loadAssets(priorityAssetUrls, () => {
+          priorityCompleted += 1;
+          wholeWebSettled += 1;
+        })).then(startWholeWeb);
         window.setInterval(() => {
           if (!wholeWebDone) updateStats();
         }, 250);
