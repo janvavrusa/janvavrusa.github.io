@@ -28,6 +28,28 @@
 
 <body class="body">
 
+  <script>
+    (() => {
+      const deferNonCriticalImages = (root = document) => {
+        root.querySelectorAll?.('img[src]').forEach((image) => {
+          if (!image.closest('.loading-carousel, .the-background-video-l-va')) {
+            image.loading = 'lazy';
+            image.decoding = 'async';
+          }
+        });
+      };
+
+      deferNonCriticalImages();
+      new MutationObserver((mutations) => {
+        mutations.forEach(({ addedNodes }) => {
+          addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) deferNonCriticalImages(node);
+          });
+        });
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+  </script>
+
   <!-- ==========================================================================
        Úvodní ("intro") video, které Webflow interakce (data-w-id) při načtení
        stránky posouvá/odkrývá. Sedí mimo .na-tac-obrazovka záměrně kvůli IX2
@@ -70,17 +92,19 @@
       <div class="loading-stats-track-stack">
         <div class="loading-stats-track-labels">
           <span class="loading-screen-label">Loading screen <span class="loading-screen-status" aria-hidden="true"></span></span>
-          <span>Whole page</span>
         </div>
         <div class="loading-stats-track loading-stats-track--screen">
           <div class="loading-stats-progress loading-stats-progress--screen"></div>
+        </div>
+        <div class="loading-stats-track-labels">
+          <span class="loading-page-label">whole web <span class="loading-page-status" aria-hidden="true"></span></span>
         </div>
         <div class="loading-stats-track loading-stats-track--page">
           <div class="loading-stats-progress loading-stats-progress--page"></div>
         </div>
       </div>
       <div class="loading-stats-grid">
-        <div><span class="loading-stats-label">Site size</span><strong data-loading-size>calculating</strong></div>
+        <div><span class="loading-stats-label">Site size</span><strong data-loading-size>274 MB</strong></div>
         <div><span class="loading-stats-label">Download speed</span><strong data-loading-speed>calculating</strong></div>
         <div><span class="loading-stats-label">Downloaded</span><strong data-loading-downloaded>0 B</strong></div>
       </div>
@@ -251,23 +275,32 @@
         const screenProgress = stats.querySelector('.loading-stats-progress--screen');
         const pageProgress = stats.querySelector('.loading-stats-progress--page');
         const screenStatus = stats.querySelector('.loading-screen-status');
+        const pageStatus = stats.querySelector('.loading-page-status');
         const size = stats.querySelector('[data-loading-size]');
         const speed = stats.querySelector('[data-loading-speed]');
         const downloaded = stats.querySelector('[data-loading-downloaded]');
         const startedAt = performance.now();
+        const siteSizeLabel = '274 MB';
 
-        const loadingAssetUrls = [...new Set(
-          [...document.querySelectorAll('.loading-marquee-item img, .the-background-video-l-va video source')]
-            .map(el => el.src || el.href)
-            .filter(Boolean)
-        )];
+        const absoluteUrl = (url) => new URL(url, document.baseURI).href;
+        const priorityAssetUrls = [...new Set([
+          ...[...document.querySelectorAll('.loading-marquee-item img')].map((el) => el.src),
+          ...[...document.querySelectorAll('.the-background-video-l-va video, .the-background-video-l-va video source')]
+            .flatMap((el) => [el.poster, el.src, el.currentSrc].filter(Boolean))
+        ].map(absoluteUrl))];
+        const wholeWebAssetUrls = [...new Set([
+          ...[...document.querySelectorAll('img[src], video[src], video source[src], link[href], script[src]')]
+            .map((el) => el.currentSrc || el.src || el.href)
+            .filter(Boolean),
+          ...[...document.querySelectorAll('video[data-video-src]')].map((el) => el.dataset.videoSrc)
+        ].map(absoluteUrl))];
 
-        let loadingTotalBytes = 0;
-        let loadingDownloadedBytes = 0;
-        let loadingCompletedAssets = 0;
-        let wholePageTotalBytes = 0;
-        let wholePageDownloadedBytes = 0;
-        let wholePageCompletedAssets = 0;
+        let priorityCompleted = 0;
+        let wholeWebCompleted = 0;
+        let downloadedBytes = 0;
+        let totalBytes = 0;
+        let wholeWebStarted = false;
+        let wholeWebDone = false;
 
         const formatBytes = (bytes) => {
           if (!Number.isFinite(bytes) || bytes <= 0) return 'calculating';
@@ -276,8 +309,6 @@
           return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
         };
 
-        const PAGE_TARGET_SIZE_BYTES = 168432848;
-
         const setProgress = (bar, value) => {
           if (!bar) return;
           bar.style.width = `${Math.min(Math.max(value, 0), 100)}%`;
@@ -285,66 +316,77 @@
 
         const updateStats = () => {
           const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.1);
-          const loadingRatio = loadingAssetUrls.length ? loadingCompletedAssets / loadingAssetUrls.length : 0;
+          const screenRatio = priorityAssetUrls.length ? priorityCompleted / priorityAssetUrls.length : 1;
+          const wholeWebRatio = wholeWebAssetUrls.length ? wholeWebCompleted / wholeWebAssetUrls.length : 1;
 
-          if (loadingRatio >= 1 && screenStatus) {
+          if (screenRatio >= 1 && screenStatus) {
             screenStatus.textContent = '✓';
             screenStatus.classList.add('is-visible');
             screenStatus.setAttribute('aria-hidden', 'false');
           }
 
-          const pageSizeBytes = PAGE_TARGET_SIZE_BYTES;
-          const pageDownloadedBytes = wholePageDownloadedBytes > 0
-            ? Math.min(wholePageDownloadedBytes, pageSizeBytes)
-            : Math.min(loadingDownloadedBytes || 0, pageSizeBytes);
-          const pageRatio = pageSizeBytes ? pageDownloadedBytes / pageSizeBytes : 0;
-
-          setProgress(screenProgress, loadingRatio * 100);
-          setProgress(pageProgress, pageRatio * 100);
-
-          downloaded.textContent = formatBytes(pageDownloadedBytes);
-          size.textContent = formatBytes(pageSizeBytes);
-          speed.textContent = pageDownloadedBytes ? `${formatBytes(pageDownloadedBytes / elapsedSeconds)}/s` : 'calculating';
-        };
-
-        loadingAssetUrls.forEach((url) => {
-          fetch(url, { cache: 'force-cache' })
-            .then(response => response.blob())
-            .then(blob => {
-              loadingTotalBytes += blob.size;
-              loadingDownloadedBytes += blob.size;
-              loadingCompletedAssets += 1;
-              updateStats();
-            })
-            .catch(() => {
-              loadingCompletedAssets += 1;
-              updateStats();
-            });
-        });
-
-        const refreshPageMetrics = () => {
-          const entries = typeof performance.getEntriesByType === 'function'
-            ? performance.getEntriesByType('resource').filter((entry) => {
-                const name = entry.name || '';
-                return name && (name.startsWith(window.location.origin) || name.startsWith('file://'));
-              })
-            : [];
-
-          if (!entries.length) {
-            wholePageCompletedAssets = Math.max(wholePageCompletedAssets, 1);
-            updateStats();
-            return;
+          if (wholeWebRatio >= 1 && pageStatus) {
+            pageStatus.textContent = '✓';
+            pageStatus.classList.add('is-visible');
+            pageStatus.setAttribute('aria-hidden', 'false');
+            wholeWebDone = true;
           }
 
-          wholePageTotalBytes = entries.reduce((sum, entry) => sum + (Number(entry.transferSize || entry.encodedBodySize || 0) || 0), 0);
-          wholePageDownloadedBytes = entries.reduce((sum, entry) => sum + ((entry.responseEnd > 0 || entry.transferSize > 0 || entry.encodedBodySize > 0) ? (Number(entry.transferSize || entry.encodedBodySize || 0) || 0) : 0), 0);
-          wholePageCompletedAssets = entries.filter((entry) => entry.responseEnd > 0 || entry.transferSize > 0 || entry.encodedBodySize > 0).length;
+          setProgress(screenProgress, screenRatio * 100);
+          setProgress(pageProgress, wholeWebRatio * 100);
+          downloaded.textContent = formatBytes(downloadedBytes);
+          size.textContent = siteSizeLabel;
+          speed.textContent = downloadedBytes ? `${formatBytes(downloadedBytes / elapsedSeconds)}/s` : 'calculating';
+        };
+
+        const downloadAsset = async (url) => {
+          try {
+            const response = await fetch(url, { cache: 'force-cache' });
+            const contentLength = Number(response.headers.get('content-length')) || 0;
+            totalBytes += contentLength;
+            if (!response.body) {
+              await response.blob();
+              downloadedBytes += contentLength;
+              return;
+            }
+            const reader = response.body.getReader();
+            let assetBytes = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              assetBytes += value.byteLength;
+              downloadedBytes += value.byteLength;
+              updateStats();
+            }
+            if (!contentLength) totalBytes += assetBytes;
+          } catch (error) {
+            // Failed optional assets still count as processed so the loader cannot hang.
+          }
+        };
+
+        const loadAssets = async (urls, onComplete) => {
+          await Promise.all(urls.map(async (url) => {
+            await downloadAsset(url);
+            onComplete();
+            updateStats();
+          }));
+        };
+
+        const startWholeWeb = async () => {
+          if (wholeWebStarted) return;
+          wholeWebStarted = true;
+          const remainingUrls = wholeWebAssetUrls.filter((url) => !priorityAssetUrls.includes(url));
+          await loadAssets(remainingUrls, () => { wholeWebCompleted += 1; });
+          wholeWebCompleted = wholeWebAssetUrls.length;
           updateStats();
         };
 
         updateStats();
-        window.addEventListener('load', refreshPageMetrics);
-        window.setInterval(refreshPageMetrics, 500);
+        loadAssets(priorityAssetUrls, () => { priorityCompleted += 1; })
+          .then(startWholeWeb);
+        window.setInterval(() => {
+          if (!wholeWebDone) updateStats();
+        }, 250);
       })();
     </script>
 
