@@ -26,6 +26,7 @@ const getCountryCode = (request: Request) =>
 export default {
   fetch: withSupabase({ auth: ["publishable"] }, async (request, context) => {
     if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+    if (request.method === "HEAD") return new Response(null, { status: 204, headers: corsHeaders });
     if (request.method !== "POST") return json({ error: "POST required" }, 405);
 
     let payload: Record<string, unknown>;
