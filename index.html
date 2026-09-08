@@ -608,8 +608,8 @@
         if (!status) return;
         status.dataset.state = state;
         status.querySelector('.animation-status__label').textContent = state === 'ready'
-          ? 'ANIMATIONS OK'
-          : state === 'loading' ? 'ANIMATIONS LOADING' : 'ANIMATIONS STALLED';
+          ? ''
+          : state === 'loading' ? 'ANIMATIONS LOADING' : 'ANIMATION OFF';
         status.querySelector('.animation-status__detail').textContent = detail;
       };
       const ensureVideoLoaded = (video) => {
@@ -639,7 +639,6 @@
       };
       const pauseVideo = (video) => {
         video.pause();
-        if (!videos.some(item => !item.paused && item.readyState >= 3)) setStatus('ready', 'paused / ready');
       };
 
       if ('IntersectionObserver' in window) {

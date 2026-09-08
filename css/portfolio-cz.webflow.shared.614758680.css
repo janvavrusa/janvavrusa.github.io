@@ -320,7 +320,7 @@ a:hover {
   left: 1.5vw;
   z-index: 20;
   width: min(19vw, 270px);
-  height: 95vh;
+  height: 92.5vh;
   box-sizing: border-box;
   overflow: auto;
   padding: clamp(10px, 1.8vh, 14px) clamp(10px, 1.3vw, 13px);
@@ -438,11 +438,11 @@ a:hover {
   line-height: 1;
 }
 
-@media screen and (max-aspect-ratio: 2/1) and (min-width: 768px) {
-  .site-info-toggle.is-visible {
-    display: block;
-  }
+.site-info-toggle.is-visible {
+  display: block;
+}
 
+@media screen and (max-aspect-ratio: 2/1) and (min-width: 768px) {
   .site-info-panel.is-visible:not(.is-open) {
     opacity: 0;
     pointer-events: none;
@@ -805,6 +805,13 @@ a:hover {
   font: 9px/1.1 'Courier New', monospace;
   letter-spacing: .04em;
   pointer-events: none;
+  width: min(19vw, 270px);
+  box-sizing: border-box;
+  transition: opacity .2s ease;
+}
+
+.animation-status[data-state='ready'] {
+  opacity: 0;
 }
 
 .animation-status__detail {
