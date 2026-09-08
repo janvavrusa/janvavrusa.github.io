@@ -402,7 +402,7 @@
     <div class="section-preview-scrollbar"><span></span></div>
   </aside>
 
-  <aside class="site-info-panel" aria-label="Live information about this visit">
+  <aside class="site-info-panel is-open" aria-label="Live information about this visit">
     <div class="site-info-panel__header">
       <span class="site-info-panel__signal" aria-hidden="true"></span>
       <span>Live diagnostics</span>
@@ -451,7 +451,7 @@
       <div class="site-info-row"><span>DOM nodes</span><strong data-site-info="dom">counting...</strong></div>
     </div>
   </aside>
-  <button class="site-info-toggle" type="button" aria-label="Open live diagnostics" aria-expanded="false">+</button>
+  <button class="site-info-toggle" type="button" aria-label="Close live diagnostics" aria-expanded="true">-</button>
   <div class="animation-status" data-state="loading" aria-live="polite">
     <span class="animation-status__dot" aria-hidden="true"></span>
     <span class="animation-status__label">ANIMATIONS LOADING</span>
@@ -608,7 +608,7 @@
         if (!status) return;
         status.dataset.state = state;
         status.querySelector('.animation-status__label').textContent = state === 'ready'
-          ? ''
+          ? 'ANIMATIONS OK'
           : state === 'loading' ? 'ANIMATIONS LOADING' : 'ANIMATION OFF';
         status.querySelector('.animation-status__detail').textContent = detail;
       };
@@ -751,15 +751,12 @@
       if (!panel) return;
       const startedAt = performance.now();
       const narrowFormat = matchMedia('(max-aspect-ratio: 2/1)');
-      const syncPanelMode = () => {
-        if (!narrowFormat.matches) {
-          panel.classList.remove('is-open');
-          toggle?.setAttribute('aria-expanded', 'false');
-        }
-      };
+      const syncPanelMode = () => {};
       toggle?.addEventListener('click', () => {
         const isOpen = panel.classList.toggle('is-open');
         toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.setAttribute('aria-label', `${isOpen ? 'Close' : 'Open'} live diagnostics`);
+        toggle.textContent = isOpen ? '-' : '+';
       });
       narrowFormat.addEventListener?.('change', syncPanelMode);
       syncPanelMode();

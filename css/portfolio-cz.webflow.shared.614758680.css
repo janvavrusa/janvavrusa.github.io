@@ -354,6 +354,12 @@ a:hover {
   transform: translateX(0);
 }
 
+.site-info-panel.is-visible:not(.is-open) {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-2vw) scale(.92);
+}
+
 .site-info-panel__header,
 .site-info-row {
   display: flex;
@@ -419,7 +425,7 @@ a:hover {
 }
 
 .site-info-toggle {
-  display: none;
+  display: block;
   position: fixed;
   top: 2.5vh;
   left: 1.5vw;
@@ -440,14 +446,6 @@ a:hover {
 
 .site-info-toggle.is-visible {
   display: block;
-}
-
-@media screen and (max-aspect-ratio: 2/1) and (min-width: 768px) {
-  .site-info-panel.is-visible:not(.is-open) {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(-2vw) scale(.92);
-  }
 }
 
 @media screen and (max-width: 1100px) {
@@ -808,10 +806,6 @@ a:hover {
   width: min(19vw, 270px);
   box-sizing: border-box;
   transition: opacity .2s ease;
-}
-
-.animation-status[data-state='ready'] {
-  opacity: 0;
 }
 
 .animation-status__detail {
