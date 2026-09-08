@@ -947,6 +947,19 @@
           latency_jitter_ms: Math.round(Math.max(...values) - Math.min(...values))
         } : {};
       };
+      const visitorGeo = async () => {
+        try {
+          const response = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+          if (!response.ok) return {};
+          const data = await response.json();
+          return {
+            country_code: typeof data.country_code === 'string' ? data.country_code.slice(0, 3) : undefined,
+            city: typeof data.city === 'string' ? data.city.slice(0, 100) : undefined
+          };
+        } catch {
+          return {};
+        }
+      };
       const sendView = (state) => {
         if (state.viewSent || state.enteredAt === null || performance.now() - state.enteredAt < 600) return;
         state.viewSent = true;
@@ -973,7 +986,9 @@
       }), { threshold: [0, 0.5] });
       states.forEach(state => observer.observe(state.section));
       const timer = window.setInterval(() => states.forEach(sendView), 200);
-      latency().then(measured => send('session_start', { started_at: startedAt, ...measured }));
+      Promise.all([latency(), visitorGeo()]).then(([measured, geo]) => {
+        send('session_start', { started_at: startedAt, ...measured, ...geo });
+      });
       const end = () => {
         if (ended) return;
         ended = true;

@@ -98,7 +98,14 @@ export default {
     };
 
     if (eventName === "session_start") {
-      Object.assign(session, await getGeoLocation(request));
+      const geo = await getGeoLocation(request);
+      Object.assign(session, geo);
+      if (geo.country_code === "UNKNOWN") {
+        const clientCountry = asString(payload.country_code, 3)?.toUpperCase();
+        const clientCity = asString(payload.city, 100);
+        if (clientCountry) session.country_code = clientCountry;
+        if (clientCity) session.city = clientCity;
+      }
     }
 
     const event = {
