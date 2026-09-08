@@ -397,10 +397,11 @@
     --> 
   </div>
 
-  <aside class="section-preview-rail" aria-label="Page sections">
+  <aside class="section-preview-rail is-open" aria-label="Page sections">
     <div class="section-preview-list"></div>
     <div class="section-preview-scrollbar"><span></span></div>
   </aside>
+  <button class="section-preview-toggle" type="button" aria-label="Collapse section previews" aria-expanded="true">-</button>
 
   <aside class="site-info-panel is-open" aria-label="Live information about this visit">
     <div class="site-info-panel__header">
@@ -428,6 +429,7 @@
       <div class="site-info-row"><span>CPU threads</span><strong data-site-info="cores">detecting...</strong></div>
       <div class="site-info-row"><span>Memory hint</span><strong data-site-info="memory">detecting...</strong></div>
       <div class="site-info-row"><span>Render power</span><strong data-site-info="power">calculating...</strong></div>
+      <div class="site-info-row"><span>Main thread load</span><strong data-site-info="load">measuring...</strong></div>
       <div class="site-info-row"><span>Viewport</span><strong data-site-info="viewport">detecting...</strong></div>
       <div class="site-info-row"><span>Pixel ratio</span><strong data-site-info="dpr">detecting...</strong></div>
       <div class="site-info-row"><span>Color depth</span><strong data-site-info="color">detecting...</strong></div>
@@ -603,13 +605,17 @@
     (() => {
       const videos = [...document.querySelectorAll('.bakalarka-video')];
       const status = document.querySelector('.animation-status');
+      const toggle = document.querySelector('.site-info-toggle');
+      const previewToggle = document.querySelector('.section-preview-toggle');
+      const loadMetric = document.querySelector('[data-site-info="load"]');
       const loadTimes = [];
       const setStatus = (state, detail = '') => {
         if (!status) return;
         status.dataset.state = state;
         status.querySelector('.animation-status__label').textContent = state === 'ready'
           ? 'ANIMATIONS OK'
-          : state === 'loading' ? 'ANIMATIONS LOADING' : 'ANIMATION OFF';
+          : state === 'loading' ? 'ANIMATIONS LOADING'
+            : state === 'busy' ? 'PAGE BUSY' : 'ANIMATION OFF';
         status.querySelector('.animation-status__detail').textContent = detail;
       };
       const ensureVideoLoaded = (video) => {
@@ -661,13 +667,57 @@
       });
       if (!videos.length) setStatus('ready', 'no video sections');
 
+      let loadSignalActive = false;
+      let lastFrameAt = performance.now();
+      let frameSamples = [];
+      let lastLongTaskAt = 0;
+      if ('PerformanceObserver' in window) {
+        try {
+          new PerformanceObserver((list) => {
+            lastLongTaskAt = performance.now();
+          }).observe({ type: 'longtask', buffered: true });
+        } catch (error) {}
+      }
+      const updateLoadSignal = (now) => {
+        const frameGap = now - lastFrameAt;
+        lastFrameAt = now;
+        frameSamples = [...frameSamples.slice(-11), frameGap];
+        const averageFrameGap = frameSamples.reduce((sum, value) => sum + value, 0) / frameSamples.length;
+        const pendingAssets = [...document.querySelectorAll('img, video')].filter((asset) => {
+          if (asset.tagName === 'IMG') return asset.src && !asset.complete;
+          return asset.src && asset.readyState < 3 && asset.networkState === 2;
+        }).length;
+        const stalledMainThread = frameGap > 180 || averageFrameGap > 75 || now - lastLongTaskAt < 900;
+        const isBusy = stalledMainThread || (pendingAssets > 0 && averageFrameGap > 38);
+        if (isBusy !== loadSignalActive) {
+          loadSignalActive = isBusy;
+          toggle?.toggleAttribute('data-load-state', isBusy);
+          if (isBusy) {
+            const delay = Math.round(Math.max(frameGap, averageFrameGap));
+            setStatus('busy', `${delay} ms / ${pendingAssets} assets`);
+            if (loadMetric) loadMetric.textContent = `high / ${delay} ms`;
+          } else {
+            if (status?.dataset.state === 'busy') setStatus('ready', 'main thread stable');
+            if (loadMetric) loadMetric.textContent = 'stable';
+          }
+        }
+        requestAnimationFrame(updateLoadSignal);
+      };
+      requestAnimationFrame(updateLoadSignal);
+
       const rail = document.querySelector('.section-preview-rail');
       const infoPanel = document.querySelector('.site-info-panel');
-      const toggle = document.querySelector('.site-info-toggle');
       const list = rail?.querySelector('.section-preview-list');
       const wrapper = document.querySelector('.wrapper');
       const loadingScreen = document.querySelector('.na-tac-obrazovka');
       if (!rail || !list || !wrapper || !loadingScreen) return;
+
+      previewToggle?.addEventListener('click', () => {
+        const isOpen = rail.classList.toggle('is-open');
+        previewToggle.setAttribute('aria-expanded', String(isOpen));
+        previewToggle.setAttribute('aria-label', `${isOpen ? 'Collapse' : 'Open'} section previews`);
+        previewToggle.textContent = isOpen ? '-' : '+';
+      });
 
       const sections = [...wrapper.querySelectorAll('.tverec')];
       sections.forEach((section, index) => {
@@ -701,6 +751,7 @@
         rail.classList.toggle('is-visible', !loadingVisible);
         infoPanel?.classList.toggle('is-visible', !loadingVisible);
         toggle?.classList.toggle('is-visible', !loadingVisible);
+        previewToggle?.classList.toggle('is-visible', !loadingVisible);
       };
 
       const updateActivePreview = () => {
