@@ -17,6 +17,9 @@ const asString = (value: unknown, maxLength: number) =>
 const asNonNegativeInteger = (value: unknown) =>
   Number.isInteger(value) && Number(value) >= 0 ? Number(value) : null;
 
+const withoutEmptyValues = (record: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(record).filter(([, value]) => value !== null && value !== undefined));
+
 const getClientIp = (request: Request) => {
   const forwardedFor = request.headers.get("x-forwarded-for");
   return request.headers.get("cf-connecting-ip") ||
@@ -86,7 +89,7 @@ export default {
     const sectionIndex = asNonNegativeInteger(payload.section_index);
     const visibleMs = asNonNegativeInteger(payload.visible_ms);
     const visitNumber = asNonNegativeInteger(payload.visit_number);
-    const session: Record<string, unknown> = {
+    const session: Record<string, unknown> = withoutEmptyValues({
       session_id: sessionId,
       visitor_id: asString(payload.visitor_id, 100),
       started_at: asString(payload.started_at, 40) || undefined,
@@ -95,7 +98,7 @@ export default {
       latency_avg_ms: asNonNegativeInteger(payload.latency_avg_ms),
       latency_jitter_ms: asNonNegativeInteger(payload.latency_jitter_ms),
       max_section_reached: asNonNegativeInteger(payload.max_section_reached),
-    };
+    });
 
     if (eventName === "session_start") {
       const geo = await getGeoLocation(request);
