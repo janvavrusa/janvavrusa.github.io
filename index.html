@@ -6,7 +6,7 @@
   <title>portfolio</title>
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="Webflow" name="generator" />
-  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=12" rel="stylesheet" type="text/css" />
+  <link href="css/portfolio-cz.webflow.shared.614758680.css?v=13" rel="stylesheet" type="text/css" />
   <style>
     .loading-marquee-row {
       width: 100vw !important;
@@ -452,6 +452,11 @@
     </div>
   </aside>
   <button class="site-info-toggle" type="button" aria-label="Open live diagnostics" aria-expanded="false">+</button>
+  <div class="animation-status" data-state="loading" aria-live="polite">
+    <span class="animation-status__dot" aria-hidden="true"></span>
+    <span class="animation-status__label">ANIMATIONS LOADING</span>
+    <span class="animation-status__detail">...</span>
+  </div>
 
   <div data-w-id="e173a967-1491-1bc5-5097-931e24b3e2c6" style="opacity:0;display:none" class="wrapper" loading = 'eager'>
 
@@ -596,19 +601,46 @@
 
   <script>
     (() => {
-      const videos = document.querySelectorAll('.bakalarka-video');
+      const videos = [...document.querySelectorAll('.bakalarka-video')];
+      const status = document.querySelector('.animation-status');
+      const loadTimes = [];
+      const setStatus = (state, detail = '') => {
+        if (!status) return;
+        status.dataset.state = state;
+        status.querySelector('.animation-status__label').textContent = state === 'ready'
+          ? 'ANIMATIONS OK'
+          : state === 'loading' ? 'ANIMATIONS LOADING' : 'ANIMATIONS STALLED';
+        status.querySelector('.animation-status__detail').textContent = detail;
+      };
       const ensureVideoLoaded = (video) => {
-        if (!video.src) {
-          video.src = video.dataset.videoSrc;
-          video.load();
-        }
+        if (video.src) return;
+        video.dataset.loadStartedAt = String(performance.now());
+        video.src = video.dataset.videoSrc;
+        video.preload = 'auto';
+        video.load();
+        video.addEventListener('canplay', () => {
+          const startedAt = Number(video.dataset.loadStartedAt);
+          if (startedAt) loadTimes.push(performance.now() - startedAt);
+          const average = loadTimes.reduce((sum, value) => sum + value, 0) / loadTimes.length;
+          setStatus('ready', `${Math.round(average)} ms`);
+        }, { once: true });
+        video.addEventListener('error', () => setStatus('error', 'load error'), { once: true });
       };
       const loadAndPlayVideo = (video) => {
         ensureVideoLoaded(video);
         video.playbackRate = 1;
+        if (video.readyState < 3) {
+          const estimate = loadTimes.length
+            ? Math.round(loadTimes.reduce((sum, value) => sum + value, 0) / loadTimes.length)
+            : '...';
+          setStatus('loading', `${estimate} ms`);
+        }
         video.play().catch(() => {});
       };
-      const pauseVideo = (video) => video.pause();
+      const pauseVideo = (video) => {
+        video.pause();
+        if (!videos.some(item => !item.paused && item.readyState >= 3)) setStatus('ready', 'paused / ready');
+      };
 
       if ('IntersectionObserver' in window) {
         const visibilityObserver = new IntersectionObserver((entries) => {
@@ -616,16 +648,19 @@
             if (isIntersecting) loadAndPlayVideo(target);
             else pauseVideo(target);
           });
-        }, { threshold: 0.01 });
+        }, { rootMargin: '100% 0px', threshold: 0.01 });
 
-        videos.forEach((video) => {
-          ensureVideoLoaded(video);
-          video.playbackRate = 1;
-          visibilityObserver.observe(video);
-        });
+        videos.forEach(video => visibilityObserver.observe(video));
       } else {
-        videos.forEach(loadAndPlayVideo);
+        videos.slice(0, 1).forEach(loadAndPlayVideo);
       }
+
+      videos.forEach(video => {
+        video.addEventListener('waiting', () => setStatus('error', 'buffering'));
+        video.addEventListener('stalled', () => setStatus('error', 'stalled'));
+        video.addEventListener('playing', () => setStatus('ready', 'playing'));
+      });
+      if (!videos.length) setStatus('ready', 'no video sections');
 
       const rail = document.querySelector('.section-preview-rail');
       const infoPanel = document.querySelector('.site-info-panel');

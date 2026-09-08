@@ -790,6 +790,43 @@ a:hover {
   overflow: hidden;
 }
 
+.animation-status {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  color: rgba(255, 255, 255, .82);
+  background: rgba(8, 8, 8, .76);
+  border: 1px solid rgba(255, 255, 255, .22);
+  font: 9px/1.1 'Courier New', monospace;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
+
+.animation-status__detail {
+  color: rgba(255, 255, 255, .55);
+}
+
+.animation-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f0a642;
+  box-shadow: 0 0 9px currentColor;
+}
+
+.animation-status[data-state='ready'] .animation-status__dot {
+  background: #58d68d;
+}
+
+.animation-status[data-state='error'] .animation-status__dot {
+  background: #e75b5b;
+}
+
 .tverec {
   aspect-ratio: 1;
   padding: 2%;
